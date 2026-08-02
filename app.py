@@ -5,6 +5,11 @@ from flask import Flask, render_template, request, jsonify, make_response
 
 app = Flask(__name__)
 
+# --- RUTA PRINCIPAL ---
+@app.route('/')
+def home():
+    return render_template('index.html')
+
 # Límite de subida: 16 GB por archivo
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 * 1024 
 
