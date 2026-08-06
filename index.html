@@ -344,6 +344,43 @@
       border-radius: 8px;
       border: none;
     }
+
+    /* Lista de Episodios en el Banner */
+    #episodesListContainer {
+      display: none;
+      margin-top: 20px;
+      max-height: 220px;
+      overflow-y: auto;
+      border-top: 1px solid #333;
+      padding-top: 15px;
+    }
+
+    .episodes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ep-item {
+      background: #2b2b2b;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ep-item:hover {
+      background: #444;
+    }
+
+    .ep-item span {
+      font-weight: bold;
+      color: #E50914;
+    }
   </style>
 </head>
 <body>
@@ -376,7 +413,7 @@
     </div>
   </div>
 
-  <!-- Panel Secreto Películas -->
+  <!-- Panel Secreto Películas (r+k+j+p) -->
   <div class="secret-panel" id="moviesSecretPanel">
     <div class="panel-box">
       <h3>Agregar Película</h3>
@@ -404,30 +441,56 @@
     </div>
   </div>
 
-  <!-- Panel Secreto Series -->
+  <!-- Panel Secreto Series (z+c+b) -->
   <div class="secret-panel" id="seriesSecretPanel">
     <div class="panel-box">
-      <h3>Agregar Serie</h3>
+      <h3>Agregar Nueva Serie</h3>
       <form id="seriesForm">
         <div class="form-group">
-          <label>Título:</label>
+          <label>Título de la Serie:</label>
           <input type="text" id="seriesTitle" required>
         </div>
         <div class="form-group">
-          <label>Enlace de Video:</label>
-          <input type="text" id="seriesSource" required>
-        </div>
-        <div class="form-group">
-          <label>Descripción:</label>
-          <textarea id="seriesDesc" rows="3" placeholder="De qué trata..."></textarea>
+          <label>Descripción General:</label>
+          <textarea id="seriesDesc" rows="3" placeholder="Sinopsis de la serie..."></textarea>
         </div>
         <div class="form-group">
           <label>Imagen de Portada:</label>
-          <input type="text" id="seriesPosterUrl" placeholder="Pegar URL de la imagen de portada">
+          <input type="text" id="seriesPosterUrl" placeholder="Pegar URL de la portada">
           <input type="file" id="seriesPoster" accept="image/*" style="margin-top:5px;">
         </div>
         <button type="submit" class="btn-red">Guardar Serie</button>
         <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('seriesSecretPanel')">Cerrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel Secreto Agregar Episodios -->
+  <div class="secret-panel" id="episodeSecretPanel">
+    <div class="panel-box">
+      <h3>Agregar Episodio</h3>
+      <form id="episodeForm">
+        <input type="hidden" id="epSerieIndex">
+        <div style="display: flex; gap: 10px;">
+          <div class="form-group" style="flex: 1;">
+            <label>Temporada:</label>
+            <input type="number" id="epSeason" min="1" value="1" required>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label>Episodio:</label>
+            <input type="number" id="epNumber" min="1" value="1" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Título del Episodio (Opcional):</label>
+          <input type="text" id="epTitle" placeholder="Ej: El comienzo...">
+        </div>
+        <div class="form-group">
+          <label>Enlace de Video (.mp4 / iframe):</label>
+          <input type="text" id="epSource" required>
+        </div>
+        <button type="submit" class="btn-red">Guardar Episodio</button>
+        <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('episodeSecretPanel')">Cerrar</button>
       </form>
     </div>
   </div>
@@ -446,12 +509,17 @@
           <span class="tag-hd">HD</span>
         </div>
         <p class="banner-desc" id="infoDesc">Sin descripción disponible.</p>
-        <button class="btn-play" id="infoPlayBtn">▶ ver trailer / reproducir</button>
+        
+        <!-- Botón Reproducir (Solo Películas) -->
+        <button class="btn-play" id="infoPlayBtn">▶ Reproducir</button>
+
+        <!-- Lista de Episodios (Solo Series) -->
+        <div id="episodesListContainer"></div>
       </div>
     </div>
   </div>
 
-  <!-- Reproductor -->
+  <!-- Reproductor Modal -->
   <div class="player-overlay" id="playerModal">
     <div class="player-container">
       <button class="close-btn" style="top: -45px; right: 0;" onclick="closePlayer()">&times;</button>
@@ -461,49 +529,17 @@
   </div>
 
   <script>
-    // LISTA INICIAL DE PELÍCULAS BASE
-    const initialMovies = [
-      {
-        title: "Lilo y stitch",
-        src: "https://www.youtube.com/embed/9$PLACEHOLDER$",
-        desc: "Una niña hawaiana solitaria adopta a un 'perro' feo al que llama Stitch, quien resulta ser un experimento genético fugitivo de un planeta alienígena.",
-        poster: "https://m.media-amazon.com/images/M/MVBmMzQyZmJjMzUtNmVmOC00ZGNhLThjYzUtZTIxNmZlY2FhNGFmXkEyXkFqcGc@._V1_.jpg"
-      },
-      {
-        title: "Avatar: Aang. El último maestro del aire",
-        src: "",
-        desc: "Aang, el último Maestro del Aire y el Avatar actual, debe dominar los cuatro elementos para salvar al mundo de la Nación del Fuego.",
-        poster: "https://m.media-amazon.com/images/M/MVBmMjNmYWMxY2EtZGYyZS00ZmM5LThlYjEtM2M0NTVhYTFjYmFlXkEyXkFqcGc@._V1_.jpg"
-      },
-      {
-        title: "Obsesion",
-        src: "",
-        desc: "Un cirujano talentoso comienza una relación apasionada con la prometida de su hijo que se convierte en una obsesión arriesgada.",
-        poster: "https://m.media-amazon.com/images/M/MVBMjBiYjQ5MmItZWM0Ni00Yzc4LTgwOWUtZTNjNzA4YjFiYjJhXkEyXkFqcGc@._V1_.jpg"
-      },
-      {
-        title: "Super Mario Galaxy: La Película",
-        src: "",
-        desc: "Mario y Luigi viajan a través del espacio y universos desconocidos para rescatar a la Princesa Peach de las garras de Bowser.",
-        poster: "https://m.media-amazon.com/images/M/MVBNDM0MTUyMDgtMDUxNC00MmFjLWIxNDUtNzEzZTI1YzA5YWYzXkEyXkFqcGc@._V1_.jpg"
-      }
-    ];
-
     const pressedKeys = new Set();
     let isEditMode = false;
     let pendingPanelTarget = null;
     const SECRET_KEY = "Barcelona10";
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Cargar lista guardada o inicializar con las 4 películas por defecto
-      let storedMovies = localStorage.getItem('movies');
-      if (!storedMovies) {
-        localStorage.setItem('movies', JSON.stringify(initialMovies));
-      }
       renderMedia('movies');
       renderMedia('series');
     });
 
+    // Combinaciones de Teclas
     window.addEventListener('keydown', (e) => {
       pressedKeys.add(e.key.toLowerCase());
       if (pressedKeys.has('r') && pressedKeys.has('k') && pressedKeys.has('j') && pressedKeys.has('p')) {
@@ -553,6 +589,44 @@
       });
     }
 
+    // Renderizado de tarjetas en la pantalla principal
+    function renderMedia(type) {
+      const isMovie = type === 'movies';
+      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
+      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
+      const data = JSON.parse(localStorage.getItem(type) || '[]');
+      
+      container.innerHTML = '';
+
+      if (data.length === 0) {
+        emptyMsg.style.display = 'block';
+      } else {
+        emptyMsg.style.display = 'none';
+        data.forEach((item, index) => {
+          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
+          
+          // Botón extra "+ Ep" para agregar episodios cuando se activa 1+0
+          const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel(${index})">+ Ep</button>` : '';
+          
+          container.innerHTML += `
+            <div class="movie-card">
+              <div onclick="openInfoModal('${type}', ${index})">
+                ${posterHTML}
+                <div class="card-info">
+                  <div class="card-title">${item.title}</div>
+                </div>
+              </div>
+              <div class="edit-controls">
+                ${extraBtn}
+                <button class="btn-danger" onclick="deleteMediaItem('${type}', ${index})">Eliminar</button>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    // Vista previa de Películas / Series
     function openInfoModal(type, index) {
       const data = JSON.parse(localStorage.getItem(type) || '[]');
       const item = data[index];
@@ -566,23 +640,49 @@
       hero.style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
 
       const playBtn = document.getElementById('infoPlayBtn');
-      playBtn.onclick = () => {
-        closeInfoModal();
-        if(item.src) playMedia(item.src);
-        else alert("No se ha configurado un enlace de video para esta película.");
-      };
+      const epContainer = document.getElementById('episodesListContainer');
+
+      if (type === 'series') {
+        playBtn.style.display = 'none';
+        epContainer.style.display = 'block';
+        
+        const episodes = item.episodes || [];
+        let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios y Temporadas</h3><div class="episodes-list">';
+        
+        if (episodes.length === 0) {
+          epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
+        } else {
+          episodes.forEach(ep => {
+            epsHtml += `
+              <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
+                <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
+                <span>▶ Ver</span>
+              </div>`;
+          });
+        }
+        epContainer.innerHTML = epsHtml + '</div>';
+      } else {
+        playBtn.style.display = 'inline-flex';
+        epContainer.style.display = 'none';
+        playBtn.onclick = () => {
+          closeInfoModal();
+          if(item.src) playMedia(item.src);
+          else alert("No se ha configurado un enlace de video para esta película.");
+        };
+      }
 
       document.getElementById('infoModal').style.display = 'flex';
     }
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 
+    // Reproducción de Videos
     function playMedia(url) {
       const modal = document.getElementById('playerModal');
       const videoTag = document.getElementById('localVideoPlayer');
       const iframeTag = document.getElementById('iframeVideoPlayer');
 
-      if (url.startsWith('http')) {
+      if (url.startsWith('http') && !url.endsWith('.mp4')) {
         videoTag.style.display = 'none';
         videoTag.src = '';
         iframeTag.src = url;
@@ -603,43 +703,32 @@
       const videoTag = document.getElementById('localVideoPlayer');
       const iframeTag = document.getElementById('iframeVideoPlayer');
 
+      if (document.pictureInPictureElement) {
+        document.exitPictureInPicture().catch(() => {});
+      }
+
       if (videoTag) { videoTag.pause(); videoTag.src = ''; }
       if (iframeTag) { iframeTag.src = ''; }
       if (modal) modal.style.display = 'none';
     }
 
-    function renderMedia(type) {
-      const isMovie = type === 'movies';
-      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
-      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
-      const data = JSON.parse(localStorage.getItem(type) || '[]');
-      
-      container.innerHTML = '';
+    // PiP Nativo (Ventana Flotante Estilo Spotify Fuera del Navegador)
+    document.addEventListener('visibilitychange', async () => {
+      const videoTag = document.getElementById('localVideoPlayer');
+      const mainPlayerModal = document.getElementById('playerModal');
 
-      if (data.length === 0) {
-        emptyMsg.style.display = 'block';
-      } else {
-        emptyMsg.style.display = 'none';
-        data.forEach((item, index) => {
-          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
-          
-          container.innerHTML += `
-            <div class="movie-card">
-              <div onclick="openInfoModal('${type}', ${index})">
-                ${posterHTML}
-                <div class="card-info">
-                  <div class="card-title">${item.title}</div>
-                </div>
-              </div>
-              <div class="edit-controls">
-                <button class="btn-danger" onclick="deleteMediaItem('${type}', ${index})">Eliminar</button>
-              </div>
-            </div>
-          `;
-        });
+      if (document.hidden && mainPlayerModal.style.display === 'flex') {
+        if (videoTag && !videoTag.paused && document.pictureInPictureElement !== videoTag) {
+          try {
+            await videoTag.requestPictureInPicture();
+          } catch (e) {
+            console.log("Picture-in-Picture requiere interacción del usuario.");
+          }
+        }
       }
-    }
+    });
 
+    // Guardar Películas
     function getBase64(file) {
       return new Promise((resolve) => {
         if (!file) return resolve('');
@@ -663,18 +752,45 @@
       closePanel('moviesSecretPanel');
     });
 
+    // Guardar Series
     document.getElementById('seriesForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = document.getElementById('seriesTitle').value;
-      const src = document.getElementById('seriesSource').value;
       const desc = document.getElementById('seriesDesc').value;
       const urlPoster = document.getElementById('seriesPosterUrl').value;
       const file = document.getElementById('seriesPoster').files[0];
       const poster = urlPoster ? urlPoster : await getBase64(file);
 
-      saveToStorage('series', { title, src, desc, poster });
+      saveToStorage('series', { title, desc, poster, episodes: [] });
       document.getElementById('seriesForm').reset();
       closePanel('seriesSecretPanel');
+    });
+
+    // Abrir Panel de Episodios
+    function openEpisodePanel(index) {
+      document.getElementById('epSerieIndex').value = index;
+      document.getElementById('episodeForm').reset();
+      document.getElementById('episodeSecretPanel').style.display = 'flex';
+    }
+
+    // Guardar Episodios en la Serie
+    document.getElementById('episodeForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const index = document.getElementById('epSerieIndex').value;
+      const season = parseInt(document.getElementById('epSeason').value);
+      const epNum = parseInt(document.getElementById('epNumber').value);
+      const title = document.getElementById('epTitle').value;
+      const src = document.getElementById('epSource').value;
+
+      const seriesData = JSON.parse(localStorage.getItem('series') || '[]');
+      if (!seriesData[index].episodes) seriesData[index].episodes = [];
+
+      seriesData[index].episodes.push({ season, epNum, title, src });
+      seriesData[index].episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum);
+
+      localStorage.setItem('series', JSON.stringify(seriesData));
+      closePanel('episodeSecretPanel');
+      renderMedia('series');
     });
 
     function saveToStorage(type, item) {
