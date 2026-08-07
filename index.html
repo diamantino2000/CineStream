@@ -22,7 +22,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 40px;
+      margin-bottom: 30px;
     }
 
     .logo {
@@ -61,7 +61,7 @@
     .section-title {
       font-size: 22px;
       font-weight: 700;
-      margin-top: 30px;
+      margin-top: 35px;
       margin-bottom: 15px;
       display: flex;
       align-items: center;
@@ -75,6 +75,67 @@
       height: 20px;
       background-color: #E50914;
       border-radius: 2px;
+    }
+
+    .hero-slider-container {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 15px;
+      scroll-behavior: smooth;
+    }
+
+    .hero-slider-container::-webkit-scrollbar {
+      height: 8px;
+    }
+    .hero-slider-container::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 4px;
+    }
+
+    .hero-card {
+      min-width: 450px;
+      height: 260px;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+      border: 1px solid #282828;
+      transition: transform 0.3s ease;
+    }
+
+    .hero-card:hover {
+      transform: scale(1.02);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(0deg, rgba(0,0,0,0.9) 10%, rgba(0,0,0,0.2) 60%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 20px;
+    }
+
+    .hero-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .hero-desc {
+      font-size: 13px;
+      color: #ccc;
+      line-clamp: 2;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
     }
 
     .empty-msg {
@@ -345,7 +406,6 @@
       border: none;
     }
 
-    /* Lista de Episodios en el Banner */
     #episodesListContainer {
       display: none;
       margin-top: 20px;
@@ -382,6 +442,34 @@
       color: #E50914;
     }
   </style>
+
+  <!-- LIBRERÍAS DE FIREBASE (MÓDULOS) -->
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  // Tus credenciales reales de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAll6C8PPZtf02uYX2DUssS0TVA-S0f0b4",
+    authDomain: "cinestream-b7d94.firebaseapp.com",
+    databaseURL: "https://cinestream-b7d94-default-rtdb.firebaseio.com",
+    projectId: "cinestream-b7d94",
+    storageBucket: "cinestream-b7d94.firebasestorage.app",
+    messagingSenderId: "237145922828",
+    appId: "1:237145922828:web:50b9f3396816ae4bdbbd29",
+    measurementId: "G-VJSZGZMN3E"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Hacer las referencias globales para usarlas en el resto del script
+  window.db = db;
+  window.dbRef = ref;
+  window.dbPush = push;
+  window.dbOnValue = onValue;
+  window.dbRemove = remove;
+</script>
 </head>
 <body>
 
@@ -393,6 +481,10 @@
   </header>
 
   <h1 class="main-title">Catálogo de Entretenimiento</h1>
+
+  <div class="section-title">Por ver ahora</div>
+  <div id="featuredContainer" class="hero-slider-container"></div>
+  <div id="noFeaturedMsg" class="empty-msg">No hay contenido destacado actualmente.</div>
 
   <div class="section-title">Películas</div>
   <div id="moviesContainer" class="movie-grid"></div>
@@ -413,82 +505,62 @@
     </div>
   </div>
 
-  <!-- Panel Secreto Películas (r+k+j+p) -->
+  <!-- Panel Secreto Destacados -->
+  <div class="secret-panel" id="featuredSecretPanel">
+    <div class="panel-box">
+      <h3>Agregar a "Por ver ahora"</h3>
+      <form id="featuredForm">
+        <div class="form-group"><label>Título:</label><input type="text" id="featuredTitle" required></div>
+        <div class="form-group"><label>Enlace de Video (.mp4 / iframe):</label><input type="text" id="featuredSource" required></div>
+        <div class="form-group"><label>Sinopsis:</label><textarea id="featuredDesc" rows="3"></textarea></div>
+        <div class="form-group"><label>Imagen Portada (URL):</label><input type="text" id="featuredPosterUrl" required></div>
+        <button type="submit" class="btn-red">Guardar Destacado</button>
+        <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('featuredSecretPanel')">Cerrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel Secreto Películas -->
   <div class="secret-panel" id="moviesSecretPanel">
     <div class="panel-box">
       <h3>Agregar Película</h3>
       <form id="movieForm">
-        <div class="form-group">
-          <label>Título:</label>
-          <input type="text" id="movieTitle" required>
-        </div>
-        <div class="form-group">
-          <label>Enlace de Video (URL iframe / mp4):</label>
-          <input type="text" id="movieSource" required>
-        </div>
-        <div class="form-group">
-          <label>Descripción / Sinopsis:</label>
-          <textarea id="movieDesc" rows="3" placeholder="De qué trata la película..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>Imagen de Portada (URL o archivo):</label>
-          <input type="text" id="moviePosterUrl" placeholder="Pegar URL de la imagen de portada">
-          <input type="file" id="moviePoster" accept="image/*" style="margin-top:5px;">
-        </div>
+        <div class="form-group"><label>Título:</label><input type="text" id="movieTitle" required></div>
+        <div class="form-group"><label>Enlace de Video (URL iframe / mp4):</label><input type="text" id="movieSource" required></div>
+        <div class="form-group"><label>Descripción / Sinopsis:</label><textarea id="movieDesc" rows="3"></textarea></div>
+        <div class="form-group"><label>Imagen de Portada (URL):</label><input type="text" id="moviePosterUrl" required></div>
         <button type="submit" class="btn-red">Guardar Película</button>
         <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('moviesSecretPanel')">Cerrar</button>
       </form>
     </div>
   </div>
 
-  <!-- Panel Secreto Series (z+c+b) -->
+  <!-- Panel Secreto Series -->
   <div class="secret-panel" id="seriesSecretPanel">
     <div class="panel-box">
       <h3>Agregar Nueva Serie</h3>
       <form id="seriesForm">
-        <div class="form-group">
-          <label>Título de la Serie:</label>
-          <input type="text" id="seriesTitle" required>
-        </div>
-        <div class="form-group">
-          <label>Descripción General:</label>
-          <textarea id="seriesDesc" rows="3" placeholder="Sinopsis de la serie..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>Imagen de Portada:</label>
-          <input type="text" id="seriesPosterUrl" placeholder="Pegar URL de la portada">
-          <input type="file" id="seriesPoster" accept="image/*" style="margin-top:5px;">
-        </div>
+        <div class="form-group"><label>Título de la Serie:</label><input type="text" id="seriesTitle" required></div>
+        <div class="form-group"><label>Descripción General:</label><textarea id="seriesDesc" rows="3"></textarea></div>
+        <div class="form-group"><label>Imagen de Portada (URL):</label><input type="text" id="seriesPosterUrl" required></div>
         <button type="submit" class="btn-red">Guardar Serie</button>
         <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('seriesSecretPanel')">Cerrar</button>
       </form>
     </div>
   </div>
 
-  <!-- Panel Secreto Agregar Episodios -->
+  <!-- Panel Secreto Episodios -->
   <div class="secret-panel" id="episodeSecretPanel">
     <div class="panel-box">
       <h3>Agregar Episodio</h3>
       <form id="episodeForm">
-        <input type="hidden" id="epSerieIndex">
+        <input type="hidden" id="epSerieKey">
         <div style="display: flex; gap: 10px;">
-          <div class="form-group" style="flex: 1;">
-            <label>Temporada:</label>
-            <input type="number" id="epSeason" min="1" value="1" required>
-          </div>
-          <div class="form-group" style="flex: 1;">
-            <label>Episodio:</label>
-            <input type="number" id="epNumber" min="1" value="1" required>
-          </div>
+          <div class="form-group" style="flex: 1;"><label>Temporada:</label><input type="number" id="epSeason" min="1" value="1" required></div>
+          <div class="form-group" style="flex: 1;"><label>Episodio:</label><input type="number" id="epNumber" min="1" value="1" required></div>
         </div>
-        <div class="form-group">
-          <label>Título del Episodio (Opcional):</label>
-          <input type="text" id="epTitle" placeholder="Ej: El comienzo...">
-        </div>
-        <div class="form-group">
-          <label>Enlace de Video (.mp4 / iframe):</label>
-          <input type="text" id="epSource" required>
-        </div>
+        <div class="form-group"><label>Título del Episodio:</label><input type="text" id="epTitle"></div>
+        <div class="form-group"><label>Enlace de Video (.mp4 / iframe):</label><input type="text" id="epSource" required></div>
         <button type="submit" class="btn-red">Guardar Episodio</button>
         <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('episodeSecretPanel')">Cerrar</button>
       </form>
@@ -499,9 +571,7 @@
   <div class="info-overlay" id="infoModal">
     <div class="info-banner">
       <button class="close-btn" onclick="closeInfoModal()">&times;</button>
-      <div class="banner-hero" id="infoHero">
-        <div class="banner-gradient"></div>
-      </div>
+      <div class="banner-hero" id="infoHero"><div class="banner-gradient"></div></div>
       <div class="banner-content">
         <h1 class="banner-title" id="infoTitle">Título</h1>
         <div class="banner-tags">
@@ -509,11 +579,7 @@
           <span class="tag-hd">HD</span>
         </div>
         <p class="banner-desc" id="infoDesc">Sin descripción disponible.</p>
-        
-        <!-- Botón Reproducir (Solo Películas) -->
         <button class="btn-play" id="infoPlayBtn">▶ Reproducir</button>
-
-        <!-- Lista de Episodios (Solo Series) -->
         <div id="episodesListContainer"></div>
       </div>
     </div>
@@ -533,30 +599,44 @@
     let isEditMode = false;
     let pendingPanelTarget = null;
     const SECRET_KEY = "Barcelona10";
+    
+    // Almacenes de Firebase en tiempo real
+    let catalog = { featured: {}, movies: {}, series: {} };
 
-    document.addEventListener('DOMContentLoaded', () => {
-      renderMedia('movies');
-      renderMedia('series');
+    window.addEventListener('load', () => {
+      // Esperar a que Firebase cargue
+      const checkFirebase = setInterval(() => {
+        if (window.db) {
+          clearInterval(checkFirebase);
+          listenToFirebase();
+        }
+      }, 100);
     });
 
-    // Combinaciones de Teclas
+    function listenToFirebase() {
+      // Escuchar cambios en tiempo real
+      window.dbOnValue(window.dbRef(window.db, 'catalog'), (snapshot) => {
+        const data = snapshot.val() || { featured: {}, movies: {}, series: {} };
+        catalog = data;
+        renderFeatured();
+        renderMedia('movies');
+        renderMedia('series');
+      });
+    }
+
+    // TECLAS Y ATAJOS
     window.addEventListener('keydown', (e) => {
       pressedKeys.add(e.key.toLowerCase());
-      if (pressedKeys.has('r') && pressedKeys.has('k') && pressedKeys.has('j') && pressedKeys.has('p')) {
-        requestAccess('moviesSecretPanel');
-      }
-      if (pressedKeys.has('z') && pressedKeys.has('c') && pressedKeys.has('b')) {
-        requestAccess('seriesSecretPanel');
-      }
+      if (pressedKeys.has('v') && pressedKeys.has('i') && pressedKeys.has('p')) requestAccess('featuredSecretPanel');
+      if (pressedKeys.has('r') && pressedKeys.has('k') && pressedKeys.has('j') && pressedKeys.has('p')) requestAccess('moviesSecretPanel');
+      if (pressedKeys.has('z') && pressedKeys.has('c') && pressedKeys.has('b')) requestAccess('seriesSecretPanel');
       if (pressedKeys.has('1') && pressedKeys.has('0')) {
         isEditMode = !isEditMode;
         document.body.classList.toggle('edit-mode', isEditMode);
       }
     });
 
-    window.addEventListener('keyup', (e) => {
-      pressedKeys.delete(e.key.toLowerCase());
-    });
+    window.addEventListener('keyup', (e) => pressedKeys.delete(e.key.toLowerCase()));
 
     function requestAccess(panelId) {
       pendingPanelTarget = panelId;
@@ -583,42 +663,34 @@
 
     function filterContent() {
       const query = document.getElementById('searchInput').value.toLowerCase();
-      document.querySelectorAll('.movie-card').forEach(card => {
-        const title = card.querySelector('.card-title').innerText.toLowerCase();
-        card.style.display = title.includes(query) ? 'block' : 'none';
+      document.querySelectorAll('.movie-card, .hero-card').forEach(card => {
+        const title = card.querySelector('.card-title, .hero-title').innerText.toLowerCase();
+        card.style.display = title.includes(query) ? '' : 'none';
       });
     }
 
-    // Renderizado de tarjetas en la pantalla principal
-    function renderMedia(type) {
-      const isMovie = type === 'movies';
-      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
-      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
-      const data = JSON.parse(localStorage.getItem(type) || '[]');
-      
-      container.innerHTML = '';
+    function renderFeatured() {
+      const container = document.getElementById('featuredContainer');
+      const emptyMsg = document.getElementById('noFeaturedMsg');
+      const items = catalog.featured || {};
+      const keys = Object.keys(items);
 
-      if (data.length === 0) {
+      container.innerHTML = '';
+      if (keys.length === 0) {
         emptyMsg.style.display = 'block';
       } else {
         emptyMsg.style.display = 'none';
-        data.forEach((item, index) => {
-          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
-          
-          // Botón extra "+ Ep" para agregar episodios cuando se activa 1+0
-          const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel(${index})">+ Ep</button>` : '';
-          
+        keys.forEach(key => {
+          const item = items[key];
+          const bgStyle = item.poster ? `background-image: url('${item.poster}');` : 'background:#222;';
           container.innerHTML += `
-            <div class="movie-card">
-              <div onclick="openInfoModal('${type}', ${index})">
-                ${posterHTML}
-                <div class="card-info">
-                  <div class="card-title">${item.title}</div>
-                </div>
+            <div class="hero-card" style="${bgStyle}" onclick="openInfoModal('featured', '${key}')">
+              <div class="hero-overlay">
+                <div class="hero-title">${item.title}</div>
+                <div class="hero-desc">${item.desc || 'Sin descripción'}</div>
               </div>
-              <div class="edit-controls">
-                ${extraBtn}
-                <button class="btn-danger" onclick="deleteMediaItem('${type}', ${index})">Eliminar</button>
+              <div class="edit-controls" style="position:absolute; top:10px; right:10px; z-index:5;">
+                <button class="btn-danger" onclick="event.stopPropagation(); deleteMediaItem('featured', '${key}')">Eliminar</button>
               </div>
             </div>
           `;
@@ -626,18 +698,49 @@
       }
     }
 
-    // Vista previa de Películas / Series
-    function openInfoModal(type, index) {
-      const data = JSON.parse(localStorage.getItem(type) || '[]');
-      const item = data[index];
+    function renderMedia(type) {
+      const isMovie = type === 'movies';
+      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
+      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
+      const items = catalog[type] || {};
+      const keys = Object.keys(items);
+
+      container.innerHTML = '';
+      if (keys.length === 0) {
+        emptyMsg.style.display = 'block';
+      } else {
+        emptyMsg.style.display = 'none';
+        keys.forEach(key => {
+          const item = items[key];
+          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
+          const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
+
+          container.innerHTML += `
+            <div class="movie-card">
+              <div onclick="openInfoModal('${type}', '${key}')">
+                ${posterHTML}
+                <div class="card-info">
+                  <div class="card-title">${item.title}</div>
+                </div>
+              </div>
+              <div class="edit-controls">
+                ${extraBtn}
+                <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    function openInfoModal(type, key) {
+      const item = catalog[type]?.[key];
       if (!item) return;
 
       document.getElementById('infoTitle').innerText = item.title;
       document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
-      document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : 'Serie';
-      
-      const hero = document.getElementById('infoHero');
-      hero.style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
+      document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : (type === 'series' ? 'Serie' : 'Destacado');
+      document.getElementById('infoHero').style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
 
       const playBtn = document.getElementById('infoPlayBtn');
       const epContainer = document.getElementById('episodesListContainer');
@@ -645,14 +748,13 @@
       if (type === 'series') {
         playBtn.style.display = 'none';
         epContainer.style.display = 'block';
-        
-        const episodes = item.episodes || [];
-        let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios y Temporadas</h3><div class="episodes-list">';
-        
+        const episodes = item.episodes ? Object.values(item.episodes) : [];
+        let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
+
         if (episodes.length === 0) {
           epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
         } else {
-          episodes.forEach(ep => {
+          episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum).forEach(ep => {
             epsHtml += `
               <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
                 <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
@@ -667,7 +769,7 @@
         playBtn.onclick = () => {
           closeInfoModal();
           if(item.src) playMedia(item.src);
-          else alert("No se ha configurado un enlace de video para esta película.");
+          else alert("Sin enlace de video.");
         };
       }
 
@@ -676,135 +778,100 @@
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 
-    // Reproducción de Videos
     function playMedia(url) {
       const modal = document.getElementById('playerModal');
       const videoTag = document.getElementById('localVideoPlayer');
       const iframeTag = document.getElementById('iframeVideoPlayer');
 
-      if (url.startsWith('http') && !url.endsWith('.mp4')) {
-        videoTag.style.display = 'none';
-        videoTag.src = '';
-        iframeTag.src = url;
-        iframeTag.style.display = 'block';
-      } else {
+      if (url.includes('.mp4') || url.includes('.webm')) {
         iframeTag.style.display = 'none';
         iframeTag.src = '';
         videoTag.src = url;
         videoTag.style.display = 'block';
         videoTag.play().catch(e => console.log(e));
+      } else {
+        videoTag.style.display = 'none';
+        videoTag.src = '';
+        iframeTag.src = url;
+        iframeTag.style.display = 'block';
       }
 
       modal.style.display = 'flex';
     }
 
     function closePlayer() {
-      const modal = document.getElementById('playerModal');
       const videoTag = document.getElementById('localVideoPlayer');
       const iframeTag = document.getElementById('iframeVideoPlayer');
-
-      if (document.pictureInPictureElement) {
-        document.exitPictureInPicture().catch(() => {});
-      }
-
       if (videoTag) { videoTag.pause(); videoTag.src = ''; }
       if (iframeTag) { iframeTag.src = ''; }
-      if (modal) modal.style.display = 'none';
+      document.getElementById('playerModal').style.display = 'none';
     }
 
-    // PiP Nativo (Ventana Flotante Estilo Spotify Fuera del Navegador)
-    document.addEventListener('visibilitychange', async () => {
-      const videoTag = document.getElementById('localVideoPlayer');
-      const mainPlayerModal = document.getElementById('playerModal');
-
-      if (document.hidden && mainPlayerModal.style.display === 'flex') {
-        if (videoTag && !videoTag.paused && document.pictureInPictureElement !== videoTag) {
-          try {
-            await videoTag.requestPictureInPicture();
-          } catch (e) {
-            console.log("Picture-in-Picture requiere interacción del usuario.");
-          }
-        }
-      }
+    // FORMULARIOS DE ENVÍO A FIREBASE
+    document.getElementById('featuredForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      saveToFirebase('featured', {
+        title: document.getElementById('featuredTitle').value,
+        src: document.getElementById('featuredSource').value,
+        desc: document.getElementById('featuredDesc').value,
+        poster: document.getElementById('featuredPosterUrl').value
+      });
+      document.getElementById('featuredForm').reset();
+      closePanel('featuredSecretPanel');
     });
 
-    // Guardar Películas
-    function getBase64(file) {
-      return new Promise((resolve) => {
-        if (!file) return resolve('');
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    document.getElementById('movieForm').addEventListener('submit', async (e) => {
+    document.getElementById('movieForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const title = document.getElementById('movieTitle').value;
-      const src = document.getElementById('movieSource').value;
-      const desc = document.getElementById('movieDesc').value;
-      const urlPoster = document.getElementById('moviePosterUrl').value;
-      const file = document.getElementById('moviePoster').files[0];
-      const poster = urlPoster ? urlPoster : await getBase64(file);
-
-      saveToStorage('movies', { title, src, desc, poster });
+      saveToFirebase('movies', {
+        title: document.getElementById('movieTitle').value,
+        src: document.getElementById('movieSource').value,
+        desc: document.getElementById('movieDesc').value,
+        poster: document.getElementById('moviePosterUrl').value
+      });
       document.getElementById('movieForm').reset();
       closePanel('moviesSecretPanel');
     });
 
-    // Guardar Series
-    document.getElementById('seriesForm').addEventListener('submit', async (e) => {
+    document.getElementById('seriesForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const title = document.getElementById('seriesTitle').value;
-      const desc = document.getElementById('seriesDesc').value;
-      const urlPoster = document.getElementById('seriesPosterUrl').value;
-      const file = document.getElementById('seriesPoster').files[0];
-      const poster = urlPoster ? urlPoster : await getBase64(file);
-
-      saveToStorage('series', { title, desc, poster, episodes: [] });
+      saveToFirebase('series', {
+        title: document.getElementById('seriesTitle').value,
+        desc: document.getElementById('seriesDesc').value,
+        poster: document.getElementById('seriesPosterUrl').value
+      });
       document.getElementById('seriesForm').reset();
       closePanel('seriesSecretPanel');
     });
 
-    // Abrir Panel de Episodios
-    function openEpisodePanel(index) {
-      document.getElementById('epSerieIndex').value = index;
+    function openEpisodePanel(seriesKey) {
+      document.getElementById('epSerieKey').value = seriesKey;
       document.getElementById('episodeForm').reset();
       document.getElementById('episodeSecretPanel').style.display = 'flex';
     }
 
-    // Guardar Episodios en la Serie
     document.getElementById('episodeForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const index = document.getElementById('epSerieIndex').value;
-      const season = parseInt(document.getElementById('epSeason').value);
-      const epNum = parseInt(document.getElementById('epNumber').value);
-      const title = document.getElementById('epTitle').value;
-      const src = document.getElementById('epSource').value;
+      const seriesKey = document.getElementById('epSerieKey').value;
+      const episodeData = {
+        season: parseInt(document.getElementById('epSeason').value),
+        epNum: parseInt(document.getElementById('epNumber').value),
+        title: document.getElementById('epTitle').value,
+        src: document.getElementById('epSource').value
+      };
 
-      const seriesData = JSON.parse(localStorage.getItem('series') || '[]');
-      if (!seriesData[index].episodes) seriesData[index].episodes = [];
-
-      seriesData[index].episodes.push({ season, epNum, title, src });
-      seriesData[index].episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum);
-
-      localStorage.setItem('series', JSON.stringify(seriesData));
+      const episodesRef = window.dbRef(window.db, `catalog/series/${seriesKey}/episodes`);
+      window.dbPush(episodesRef, episodeData);
       closePanel('episodeSecretPanel');
-      renderMedia('series');
     });
 
-    function saveToStorage(type, item) {
-      const data = JSON.parse(localStorage.getItem(type) || '[]');
-      data.push(item);
-      localStorage.setItem(type, JSON.stringify(data));
-      renderMedia(type);
+    function saveToFirebase(type, data) {
+      const sectionRef = window.dbRef(window.db, `catalog/${type}`);
+      window.dbPush(sectionRef, data);
     }
 
-    function deleteMediaItem(type, index) {
-      const data = JSON.parse(localStorage.getItem(type) || '[]');
-      data.splice(index, 1);
-      localStorage.setItem(type, JSON.stringify(data));
-      renderMedia(type);
+    function deleteMediaItem(type, key) {
+      const itemRef = window.dbRef(window.db, `catalog/${type}/${key}`);
+      window.dbRemove(itemRef);
     }
   </script>
 </body>
