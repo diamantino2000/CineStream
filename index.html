@@ -637,38 +637,29 @@ header {
   <!-- LIBRERÍAS DE FIREBASE (MÓDULOS) -->
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// Configuración e inicialización
-const firebaseConfig = { /* Tus credenciales */ };
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+  // Tus credenciales reales de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAll6C8PPZtf02uYX2DUssS0TVA-S0f0b4",
+    authDomain: "cinestream-b7d94.firebaseapp.com",
+    databaseURL: "https://cinestream-b7d94-default-rtdb.firebaseio.com",
+    projectId: "cinestream-b7d94",
+    storageBucket: "cinestream-b7d94.firebasestorage.app",
+    messagingSenderId: "237145922828",
+    appId: "1:237145922828:web:50b9f3396816ae4bdbbd29",
+    measurementId: "G-VJSZGZMN3E"
+  };
 
-// Función para iniciar sesión desde tu formulario de login
-async function iniciarSesionAdmin(email, password) {
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    alert("¡Sesión iniciada correctamente!");
-  } catch (error) {
-    alert("Acceso denegado: Datos incorrectos.");
-  }
-}
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-// Controlar la interfaz según si estás conectado o no
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // Si estás autenticado, se habilita el panel para añadir/editar películas
-    document.getElementById("panel-admin").style.display = "block";
-  } else {
-    // Si no hay sesión, se oculta el panel de administración
-    document.getElementById("panel-admin").style.display = "none";
-  }
-});
-
-// Función para cerrar sesión
-function cerrarSesion() {
-  signOut(auth);
-}
+  // Hacer las referencias globales para usarlas en el resto del script
+  window.db = db;
+  window.dbRef = ref;
+  window.dbPush = push;
+  window.dbOnValue = onValue;
+  window.dbRemove = remove;
 </script>
 <link rel="shortcut icon" href="/static/img/logo.png" type="image/x-icon">
 <link rel="icon" href="/static/img/logo.png" type="image/png">
