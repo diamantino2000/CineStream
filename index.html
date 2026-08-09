@@ -546,6 +546,92 @@
     font-size: 1.8rem;
   }
 }
+/* Estilo para la imagen del logo */
+.logo-img {
+  height: 40px; /* Ajusta la altura según tu diseño */
+  width: auto;
+  object-fit: contain;
+}
+
+/* Ajuste de tamaño para teléfonos */
+@media (max-width: 768px) {
+  .logo-img {
+    height: 32px; /* Más pequeño en celular para no amontonarse */
+  }
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  width: 100%;
+}
+
+.logo-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+  /* Convierte los tonos oscuros/grises en negros transparentes */
+  filter: brightness(1.2) contrast(150%);
+  mix-blend-mode: lighten;
+}
+.logo-text {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.logo-text span {
+  color: #E50914;
+}
+
+.search-box {
+  background: #000000;
+  border: 1px solid #333;
+  border-radius: 20px;
+  padding: 8px 18px;
+  width: 280px;
+  display: flex;
+  align-items: center;
+}
+
+.search-box input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+}
+
+/* Ajustes para pantalla móvil */
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .logo-icon {
+    height: 35px;
+  }
+
+  .logo-text {
+    font-size: 24px;
+  }
+}
   </style>
 
   <!-- LIBRERÍAS DE FIREBASE (MÓDULOS) -->
@@ -575,15 +661,19 @@
   window.dbOnValue = onValue;
   window.dbRemove = remove;
 </script>
+ <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/Logo.png') }}">
 </head>
 <body>
 
   <header>
-    <div class="logo">Cine<span>Stream</span></div>
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Buscar película o serie..." onkeyup="filterContent()">
-    </div>
-  </header>
+  <div class="logo-box">
+    <img src="/static/img/Logo.png" alt="Logo" class="logo-icon">
+    <div class="logo-text">Cn<span>Stream</span></div>
+  </div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Buscar película o serie..." onkeyup="filterContent()">
+  </div>
+</header>
 
   <h1 class="main-title">Catálogo de Entretenimiento</h1>
 
