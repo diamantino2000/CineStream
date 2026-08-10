@@ -1,10 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CineStream</title>
-  <style>
+  <meta name="google-site-verification" content="MI_Hq14iBWIEfl1lyAjPv81ga14D-JDykYDLOLaC3gY" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Configuración SEO principal -->
+    <title>CnStream - Películas y Series Online</title>
+    <meta name="description" content="Disfruta de las mejores películas y series en CnStream. Tu plataforma de entretenimiento online en alta calidad.">
+    <meta name="keywords" content="CnStream, ver peliculas online, cine, peliculas gratis, series">
+    <meta name="robots" content="index, follow">
+
+    <!-- Código de verificación de Google Search Console (pégalo aquí cuando Google te lo dé) -->
+    <!-- <meta name="google-site-verification" content="TU_CODIGO_AQUI" /> -->
+
+    <style>
     * {
       box-sizing: border-box;
       margin: 0;
@@ -678,7 +688,7 @@ header {
 
   <h1 class="main-title">Catálogo de Entretenimiento</h1>
 
-  <div class="section-title">Por ver ahora</div>
+  <div class="section-title">destacados</div>
   <div id="featuredContainer" class="hero-slider-container"></div>
   <div id="noFeaturedMsg" class="empty-msg">No hay contenido destacado actualmente.</div>
 
@@ -975,25 +985,35 @@ header {
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 
     function playMedia(url) {
-      const modal = document.getElementById('playerModal');
-      const videoTag = document.getElementById('localVideoPlayer');
-      const iframeTag = document.getElementById('iframeVideoPlayer');
+  const modal = document.getElementById('playerModal');
+  const videoTag = document.getElementById('localVideoPlayer');
+  const iframeTag = document.getElementById('iframeVideoPlayer');
 
-      if (url.includes('.mp4') || url.includes('.webm')) {
-        iframeTag.style.display = 'none';
-        iframeTag.src = '';
-        videoTag.src = url;
-        videoTag.style.display = 'block';
-        videoTag.play().catch(e => console.log(e));
-      } else {
-        videoTag.style.display = 'none';
-        videoTag.src = '';
-        iframeTag.src = url;
-        iframeTag.style.display = 'block';
-      }
+  if (url.includes('.mp4') || url.includes('.webm')) {
+    iframeTag.style.display = 'none';
+    iframeTag.src = '';
+    
+    // Asignar fuente y ocultar descarga
+    videoTag.src = url;
+    videoTag.setAttribute('controlsList', 'nodownload');
+    videoTag.style.display = 'block';
 
-      modal.style.display = 'flex';
-    }
+    // Abrir modal y reproducir en tamaño normal
+    modal.style.display = 'flex';
+    videoTag.play();
+
+  } else {
+    // Si es un iframe externo
+    videoTag.style.display = 'none';
+    videoTag.src = '';
+    iframeTag.src = url;
+    iframeTag.style.display = 'block';
+    
+    modal.style.display = 'flex';
+  }
+}
+
+    
 
     function closePlayer() {
       const videoTag = document.getElementById('localVideoPlayer');
