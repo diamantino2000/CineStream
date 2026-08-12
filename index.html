@@ -792,14 +792,15 @@ header {
   </div>
 
   <!-- Reproductor Modal -->
-  <div class="player-overlay" id="playerModal">
-    <div class="player-container">
-      <button class="close-btn" style="top: -45px; right: 0;" onclick="closePlayer()">&times;</button>
-      <video id="localVideoPlayer" controls autoplay style="display: none;"></video>
-      <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none;"></iframe>
-    </div>
+  <!-- Reproductor Modal -->
+<!-- Reproductor Modal -->
+<div class="player-overlay" id="playerModal">
+  <div class="player-container">
+    <button class="close-btn" style="top: -45px; right: 0;" onclick="closePlayer()">&times;</button>
+    <video id="localVideoPlayer" controls autoplay style="display: none;"></video>
+    <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none;"></iframe>
   </div>
-
+</div>
   <script>
     const pressedKeys = new Set();
     let isEditMode = false;
@@ -1091,12 +1092,26 @@ header {
     }
   </script>
   <script>
-  document.addEventListener('click', function handler() {
-    // Abre el enlace publicitario en una nueva pestaña
-    window.open('https://www.effectivecpmnetwork.com/renpmz5t05?key=95727fb1e3c21432fc7b4b6a5aed153e', '_blank');
-    // Elimina el evento para que solo salte en el primer clic del usuario
-    document.removeEventListener('click', handler);
+  let adPlayed = false;
+  const smartlinkUrl = 'https://www.effectivecpmnetwork.com/renpmz5t05?key=95727fb1e3c21432fc7b4b6a5aed153e';
+
+  // Ejecuta la publicidad justo al hacer clic para abrir la película
+  document.addEventListener('click', function(e) {
+    // Si el usuario hace clic en el botón de reproducir o en una tarjeta de película
+    if (e.target.closest('#infoPlayBtn') || e.target.closest('.card') || e.target.closest('.btn-play')) {
+      if (!adPlayed) {
+        window.open(smartlinkUrl, '_blank');
+        adPlayed = true; // Solo abre 1 vez por sesión para no molestar
+      }
+    }
   });
 </script>
+<!-- Tus reproductores y scripts de la web -->
+
+<!-- Código de In-Page Push de Adsterra -->
+<script type='text/javascript' src='<script src="https://pl30793352.effectivecpmnetwork.com/ff/8e/5f/ff8e5fc1885dd3156fb168f07deddd7b.js">
+'></script>
+<script src="/sw.js"></script>
+
 </body>
 </html>
