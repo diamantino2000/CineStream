@@ -13,6 +13,7 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
 </head>
+    
 
     <style>
     * {
@@ -798,6 +799,20 @@ header {
   <div class="player-container">
     <button class="close-btn" style="top: -45px; right: 0;" onclick="closePlayer()">&times;</button>
     <video id="localVideoPlayer" controls autoplay style="display: none;"></video>
+    <div id="playerContainer" style="position: relative; width: 100%; height: 100%;">
+  
+  <!-- Tu reproductor actual (iframe o video) -->
+  <iframe id="iframeVideoPlayer" src="AQUI_TU_VIDEO" allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>
+
+  <!-- CAPA TRANSPARENTE PARA LOS 7 POPUNDERS -->
+  <div id="popunderOverlay" onclick="ejecutarPopunder()" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; cursor: pointer; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.1);">
+    <!-- Icono de Play en medio -->
+    <div style="width: 80px; height: 80px; background: rgba(229, 9, 20, 0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center;">
+      <div style="width: 0; height: 0; border-top: 15px solid transparent; border-bottom: 15px solid transparent; border-left: 25px solid white; margin-left: 5px;"></div>
+    </div>
+  </div>
+
+</div>
     <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none;"></iframe>
   </div>
 </div>
@@ -1090,21 +1105,41 @@ header {
       const itemRef = window.dbRef(window.db, `catalog/${type}/${key}`);
       window.dbRemove(itemRef);
     }
+  
+  let contadorPopunders = 0;
+  const TOTAL_POPUNDERS = 4;
+  // Reemplaza esto con tu Direct Link de Monetag / Adsterra
+  const URL_POPUNDER = "https://www.google.com"; 
+
+  function ejecutarPopunder() {
+    contadorPopunders++;
+
+    // Abre el popunder en una nueva pestaña
+    window.open(URL_POPUNDER, '_blank');
+
+    // Cuando llega a 7 clics, oculta la capa para permitir interactuar con el reproductor
+    if (contadorPopunders >= TOTAL_POPUNDERS) {
+      const overlay = document.getElementById('popunderOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+    }
+  }
+
+  // Función para reiniciar el contador cuando el usuario abre otra película
+  function resetearContadorPopunders() {
+    contadorPopunders = 0;
+    const overlay = document.getElementById('popunderOverlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+    }
+  }
+</script>
   </script>
   <script>
   let adPlayed = false;
   const smartlinkUrl = 'https://www.effectivecpmnetwork.com/renpmz5t05?key=95727fb1e3c21432fc7b4b6a5aed153e';
 
-  // Ejecuta la publicidad justo al hacer clic para abrir la película
-  document.addEventListener('click', function(e) {
-    // Si el usuario hace clic en el botón de reproducir o en una tarjeta de película
-    if (e.target.closest('#infoPlayBtn') || e.target.closest('.card') || e.target.closest('.btn-play')) {
-      if (!adPlayed) {
-        window.open(smartlinkUrl, '_blank');
-        adPlayed = true; // Solo abre 1 vez por sesión para no molestar
-      }
-    }
-  });
 </script>
 <!-- Tus reproductores y scripts de la web -->
 
