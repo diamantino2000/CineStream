@@ -1049,46 +1049,67 @@ header {
     }
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
-
-    function playMedia(url) {
+function playMedia(url) {
   const modal = document.getElementById('playerModal');
   const videoTag = document.getElementById('localVideoPlayer');
   const iframeTag = document.getElementById('iframeVideoPlayer');
+  const popunderOverlay = document.getElementById('popunderOverlay');
 
   if (url.includes('.mp4') || url.includes('.webm')) {
     iframeTag.style.display = 'none';
     iframeTag.src = '';
     
-    // Asignar fuente y ocultar descarga
     videoTag.src = url;
     videoTag.setAttribute('controlsList', 'nodownload');
     videoTag.style.display = 'block';
 
-    // Abrir modal y reproducir en tamaño normal
+    // No mostramos el overlay para archivos mp4 directos
+    popunderOverlay.style.display = 'none';
+
     modal.style.display = 'flex';
     videoTag.play();
 
   } else {
-    // Si es un iframe externo
+    // Si es un iframe externo (por ejemplo, servidor de video)
     videoTag.style.display = 'none';
     videoTag.src = '';
+    
     iframeTag.src = url;
     iframeTag.style.display = 'block';
     
+    // MOSTRAR la capa transparente del popunder SOLO AHORA que se abrió el iframe
+    popunderOverlay.style.display = 'flex';
+
     modal.style.display = 'flex';
   }
 }
 
-    
+function ejecutarPopunder() {
+  // Aquí va tu código para abrir el enlace publicitario / popunder
+  // Ejemplo: window.open('https://tu-enlace-de-publicidad.com', '_blank');
 
-    function closePlayer() {
-      const videoTag = document.getElementById('localVideoPlayer');
-      const iframeTag = document.getElementById('iframeVideoPlayer');
-      if (videoTag) { videoTag.pause(); videoTag.src = ''; }
-      if (iframeTag) { iframeTag.src = ''; }
-      document.getElementById('playerModal').style.display = 'none';
-    }
+  // Una vez que el usuario hace clic, ocultamos la capa para que pueda interactuar con el video
+  const popunderOverlay = document.getElementById('popunderOverlay');
+  if (popunderOverlay) {
+    popunderOverlay.style.display = 'none';
+  }
+}
 
+function closePlayer() {
+  const videoTag = document.getElementById('localVideoPlayer');
+  const iframeTag = document.getElementById('iframeVideoPlayer');
+  const popunderOverlay = document.getElementById('popunderOverlay');
+
+  if (videoTag) { videoTag.pause(); videoTag.src = ''; }
+  if (iframeTag) { iframeTag.src = ''; }
+  
+  // Ocultar la capa de popunder al cerrar el reproductor
+  if (popunderOverlay) {
+    popunderOverlay.style.display = 'none';
+  }
+
+  document.getElementById('playerModal').style.display = 'none';
+}
     // FORMULARIOS DE ENVÍO A FIREBASE
     document.getElementById('featuredForm').addEventListener('submit', (e) => {
       e.preventDefault();
