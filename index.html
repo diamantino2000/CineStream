@@ -738,6 +738,11 @@ header {
         <div class="form-group"><label>Imagen de Portada (URL):</label><input type="text" id="moviePosterUrl" required></div>
         <button type="submit" class="btn-red">Guardar Película</button>
         <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('moviesSecretPanel')">Cerrar</button>
+           <!-- En el formulario de Películas -->
+<div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+  <input type="checkbox" id="movieFeatured" style="width: auto; cursor: pointer;">
+  <label for="movieFeatured" style="margin: 0; cursor: pointer;">¿Destacar en el inicio?</label>
+</div>
       </form>
     </div>
   </div>
@@ -752,6 +757,11 @@ header {
         <div class="form-group"><label>Imagen de Portada (URL):</label><input type="text" id="seriesPosterUrl" required></div>
         <button type="submit" class="btn-red">Guardar Serie</button>
         <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('seriesSecretPanel')">Cerrar</button>
+          <!-- En el formulario de Series -->
+<div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+  <input type="checkbox" id="seriesFeatured" style="width: auto; cursor: pointer;">
+  <label for="seriesFeatured" style="margin: 0; cursor: pointer;">¿Destacar en el inicio?</label>
+</div>
       </form>
     </div>
   </div>
