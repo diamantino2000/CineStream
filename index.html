@@ -678,6 +678,60 @@ header {
     height: 32px;
     font-size: 20px;
   }
+}
+   /* Controles de navegación de episodios */
+.series-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  background: #181818;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 1px solid #282828;
+}
+
+.btn-nav {
+  background: #E50914;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-nav:hover:not(:disabled) {
+  background: #b20710;
+}
+
+.btn-nav:disabled {
+  background: #333333;
+  color: #777777;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ep-nav-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .series-navigation {
+    padding: 8px 12px;
+  }
+  .btn-nav {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .ep-nav-title {
+    font-size: 13px;
+  }
 }     
   </style>
 
@@ -843,6 +897,7 @@ header {
 <!-- Reproductor Modal -->
 <!-- Reproductor Modal -->
 <!-- Reproductor Modal -->
+<!-- Reproductor Modal -->
 <div class="player-overlay" id="playerModal">
   <div class="player-container">
     <button class="close-btn player-close-btn" onclick="closePlayer()">&times;</button>
@@ -852,12 +907,19 @@ header {
     <div id="playerContainer" style="position: relative; width: 100%; height: 520px;">
       <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none; width: 100%; height: 100%; border: none;"></iframe>
 
-      <!-- CAPA TRANSPARENTE DE POPUNDER (Inicia oculta) -->
+      <!-- CAPA TRANSPARENTE DE POPUNDER -->
       <div id="popunderOverlay" onclick="ejecutarPopunder()" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; cursor: pointer; justify-content: center; align-items: center; background: rgba(0,0,0,0.3);">
         <div style="width: 80px; height: 80px; background: rgba(229, 9, 20, 0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center;">
           <div style="width: 0; height: 0; border-top: 15px solid transparent; border-bottom: 15px solid transparent; border-left: 25px solid white; margin-left: 5px;"></div>
         </div>
       </div>
+    </div>
+
+    <!-- CONTROLES DE NAVEGACIÓN ENTRE EPISODIOS -->
+    <div id="seriesControls" class="series-navigation" style="display: none;">
+      <button id="btnPrevEp" class="btn-nav" onclick="navigateEpisode(-1)">◄ Anterior</button>
+      <span id="currentEpTitle" class="ep-nav-title"></span>
+      <button id="btnNextEp" class="btn-nav" onclick="navigateEpisode(1)">Siguiente ►</button>
     </div>
   </div>
 </div>
@@ -1205,6 +1267,106 @@ function closePlayer() {
       overlay.style.display = 'flex';
     }
   }
+      // Variables globales para rastrear el episodio actual
+let currentSeriesEpisodes = [];
+let currentEpisodeIndex = -1;
+
+// Modificación de la función para abrir el modal desde las series
+function openInfoModal(type, key) {
+  const item = catalog[type]?.[key];
+  if (!item) return;
+
+  document.getElementById('infoTitle').innerText = item.title;
+  document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
+  document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : (type === 'series' ? 'Serie' : 'Destacado');
+  document.getElementById('infoHero').style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
+
+  const playBtn = document.getElementById('infoPlayBtn');
+  const epContainer = document.getElementById('episodesListContainer');
+
+  if (type === 'series') {
+    playBtn.style.display = 'none';
+    epContainer.style.display = 'block';
+    
+    // Guardar y ordenar los episodios de la serie actual
+    const rawEpisodes = item.episodes ? Object.values(item.episodes) : [];
+    currentSeriesEpisodes = rawEpisodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum);
+
+    let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
+
+    if (currentSeriesEpisodes.length === 0) {
+      epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
+    } else {
+      currentSeriesEpisodes.forEach((ep, index) => {
+        epsHtml += `
+          <div class="ep-item" onclick="closeInfoModal(); playEpisodeByIndex(${index})">
+            <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
+            <span>▶ Ver</span>
+          </div>`;
+      });
+    }
+    epContainer.innerHTML = epsHtml + '</div>';
+  } else {
+    // Si es película o destacado, limpiar la lista de episodios
+    currentSeriesEpisodes = [];
+    currentEpisodeIndex = -1;
+    playBtn.style.display = 'inline-flex';
+    epContainer.style.display = 'none';
+    playBtn.onclick = () => {
+      closeInfoModal();
+      if(item.src) playMedia(item.src);
+      else alert("Sin enlace de video.");
+    };
+  }
+
+  document.getElementById('infoModal').style.display = 'flex';
+}
+
+// Reproduce un episodio por su índice en la lista de la serie
+function playEpisodeByIndex(index) {
+  if (index < 0 || index >= currentSeriesEpisodes.length) return;
+  
+  currentEpisodeIndex = index;
+  const ep = currentSeriesEpisodes[index];
+  
+  // Actualizar interfaz del control de episodios
+  const navContainer = document.getElementById('seriesControls');
+  const titleDisplay = document.getElementById('currentEpTitle');
+  const btnPrev = document.getElementById('btnPrevEp');
+  const btnNext = document.getElementById('btnNextEp');
+
+  navContainer.style.display = 'flex';
+  titleDisplay.innerText = `T${ep.season} E${ep.epNum}: ${ep.title || 'Episodio ' + ep.epNum}`;
+  
+  btnPrev.disabled = index === 0;
+  btnNext.disabled = index === currentSeriesEpisodes.length - 1;
+
+  playMedia(ep.src);
+}
+
+// Navegar entre el episodio anterior o siguiente (-1 / +1)
+function navigateEpisode(direction) {
+  const newIndex = currentEpisodeIndex + direction;
+  if (newIndex >= 0 && newIndex < currentSeriesEpisodes.length) {
+    playEpisodeByIndex(newIndex);
+  }
+}
+
+// Actualizar la función de cierre del reproductor
+function closePlayer() {
+  const modal = document.getElementById('playerModal');
+  const videoTag = document.getElementById('localVideoPlayer');
+  const iframeTag = document.getElementById('iframeVideoPlayer');
+  const navContainer = document.getElementById('seriesControls');
+
+  videoTag.pause();
+  videoTag.src = '';
+  iframeTag.src = '';
+  
+  modal.style.display = 'none';
+  navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
+  currentEpisodeIndex = -1;
+}
 </script>
   </script>
   <script>
