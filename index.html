@@ -907,8 +907,7 @@ header {
       <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none; width: 100%; height: 100%; border: none;"></iframe>
 
       <!-- CAPA TRANSPARENTE DE POPUNDER -->
-      <!-- Cambia display: flex/block a display: none -->
-       <div id="popunderOverlay" onclick="ejecutarPopunder()" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; cursor: pointer;">
+      <div id="popunderOverlay" onclick="ejecutarPopunder()" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; cursor: pointer; justify-content: center; align-items: center; background: rgba(0,0,0,0.3);">
         <div style="width: 80px; height: 80px; background: rgba(229, 9, 20, 0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center;">
           <div style="width: 0; height: 0; border-top: 15px solid transparent; border-bottom: 15px solid transparent; border-left: 25px solid white; margin-left: 5px;"></div>
         </div>
@@ -1111,36 +1110,52 @@ header {
     }
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
-function playMedia(videoUrl) {
-  // 1. Ocultar la ventana de información
-  closeInfoModal();
+function playMedia(url) {
+  const modal = document.getElementById('playerModal');
+  const videoTag = document.getElementById('localVideoPlayer');
+  const iframeTag = document.getElementById('iframeVideoPlayer');
+  const popunderOverlay = document.getElementById('popunderOverlay');
 
-  // 2. Cargar la URL del video en el iframe o reproductor local
-  const playerIframe = document.getElementById('iframeVideoPlayer');
-  playerIframe.src = videoUrl;
-  playerIframe.style.display = 'block';
+  if (url.includes('.mp4') || url.includes('.webm')) {
+    iframeTag.style.display = 'none';
+    iframeTag.src = '';
+    
+    videoTag.src = url;
+    videoTag.setAttribute('controlsList', 'nodownload');
+    videoTag.style.display = 'block';
 
-  // 3. Mostrar la capa transparente sobre el reproductor para capturar el clic publicitario
-  const overlay = document.getElementById('popunderOverlay');
-  if (overlay) {
-    overlay.style.display = 'flex';
+    // No mostramos el overlay para archivos mp4 directos
+    popunderOverlay.style.display = 'none';
+
+    modal.style.display = 'flex';
+    videoTag.play();
+
+  } else {
+    // Si es un iframe externo (por ejemplo, servidor de video)
+    videoTag.style.display = 'none';
+    videoTag.src = '';
+    
+    iframeTag.src = url;
+    iframeTag.style.display = 'block';
+    
+    // MOSTRAR la capa transparente del popunder SOLO AHORA que se abrió el iframe
+    popunderOverlay.style.display = 'flex';
+
+    modal.style.display = 'flex';
   }
-
-  // 4. Mostrar el modal del reproductor
-  document.getElementById('playerModal').style.display = 'flex';
 }
 
-// Función ejecutada únicamente al hacer clic sobre el reproductor
 function ejecutarPopunder() {
-  // Abrir el enlace publicitario en una nueva pestaña
-  window.open('https://5gvci.com/act/files/tag.min.js?z=11559226', '_blank');
+  // Aquí va tu código para abrir el enlace publicitario / popunder
+  // Ejemplo: window.open('https://tu-enlace-de-publicidad.com', '_blank');
 
-  // Ocultar la capa para que el usuario pueda interactuar con los controles del video
-  const overlay = document.getElementById('popunderOverlay');
-  if (overlay) {
-    overlay.style.display = 'none';
+  // Una vez que el usuario hace clic, ocultamos la capa para que pueda interactuar con el video
+  const popunderOverlay = document.getElementById('popunderOverlay');
+  if (popunderOverlay) {
+    popunderOverlay.style.display = 'none';
   }
 }
+
 function closePlayer() {
   const videoTag = document.getElementById('localVideoPlayer');
   const iframeTag = document.getElementById('iframeVideoPlayer');
