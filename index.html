@@ -96,13 +96,19 @@
       scroll-behavior: smooth;
     }
 
-    .hero-slider-container::-webkit-scrollbar {
-      height: 8px;
-    }
-    .hero-slider-container::-webkit-scrollbar-thumb {
-      background: #333;
-      border-radius: 4px;
-    }
+   .hero-slider-container {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory; /* Encaje automático */
+}
+
+.hero-card {
+  scroll-snap-align: start; /* Alinea cada tarjeta al borde */
+  /* ... mantén el resto de tus estilos del hero-card ... */
+}
 
     .hero-card {
       min-width: 450px;
@@ -1014,6 +1020,68 @@ header {
       const emptyMsg = document.getElementById('noFeaturedMsg');
       const items = catalog.featured || {};
       const keys = Object.keys(items);
+        // VARIABLES Y LÓGICA DEL CARRUSEL AUTOMÁTICO
+let featuredInterval = null;
+
+function startFeaturedAutoScroll() {
+  const container = document.getElementById('featuredContainer');
+  if (!container) return;
+
+  // Limpiar cualquier temporizador previo
+  if (featuredInterval) clearInterval(featuredInterval);
+
+  featuredInterval = setInterval(() => {
+    // Si el usuario tiene el ratón encima, no deslizar para no interrumpir
+    if (container.matches(':hover')) return;
+
+    const cards = container.querySelectorAll('.hero-card');
+    if (cards.length <= 1) return; // Si hay 1 o 0 elementos, no rota
+
+    const cardWidth = cards[0].offsetWidth + 20; // Ancho de tarjeta + gap
+    const maxScroll = container.scrollWidth - container.clientWidth;
+
+    // Si llega al final del slider, regresa al inicio suavemente
+    if (container.scrollLeft >= maxScroll - 10) {
+      container.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      container.scrollBy({ left: cardWidth, behavior: 'smooth' });
+    }
+  }, 4000); // Rota cada 4 segundos (4000 ms)
+}
+        function renderFeatured() {
+  const container = document.getElementById('featuredContainer');
+  const emptyMsg = document.getElementById('noFeaturedMsg');
+  const items = catalog.featured || {};
+  const keys = Object.keys(items);
+
+  container.innerHTML = '';
+  if (keys.length === 0) {
+    emptyMsg.style.display = 'block';
+    if (featuredInterval) clearInterval(featuredInterval);
+  } else {
+    emptyMsg.style.display = 'none';
+    keys.forEach(key => {
+      const item = items[key];
+      const bgStyle = item.poster ? `background-image: url('${item.poster}');` : 'background:#222;';
+      
+      // Funciona exactamente igual para Películas y Series en Destacados
+      container.innerHTML += `
+        <div class="hero-card" style="${bgStyle}" onclick="openInfoModal('featured', '${key}')">
+          <div class="hero-overlay">
+            <div class="hero-title">${item.title}</div>
+            <div class="hero-desc">${item.desc || 'Sin descripción'}</div>
+          </div>
+          <div class="edit-controls" style="position:absolute; top:10px; right:10px; z-index:5;">
+            <button class="btn-danger" onclick="event.stopPropagation(); deleteMediaItem('featured', '${key}')">Eliminar</button>
+          </div>
+        </div>
+      `;
+    });
+
+    // Arrancar el giro automático al cargar/actualizar los elementos
+    startFeaturedAutoScroll();
+  }
+}
 
       container.innerHTML = '';
       if (keys.length === 0) {
