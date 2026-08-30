@@ -764,6 +764,7 @@ header {
 </script>
 <link rel="shortcut icon" href="/static/img/logo.png" type="image/x-icon">
 <link rel="icon" href="/static/img/logo.png" type="image/png">
+<script src="https://5gvci.com/act/files/tag.min.js?z=11559226" data-cfasync="false" async></script>
 </head>
 <body>
   <header>
@@ -1109,9 +1110,7 @@ header {
       document.getElementById('infoModal').style.display = 'flex';
     }
 
-    // Variable para controlar si el popunder ya se mostró en esta sesión de video
-let popunderEjecutado = false;
-
+    function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 function playMedia(url) {
   const modal = document.getElementById('playerModal');
   const videoTag = document.getElementById('localVideoPlayer');
@@ -1126,58 +1125,52 @@ function playMedia(url) {
     videoTag.setAttribute('controlsList', 'nodownload');
     videoTag.style.display = 'block';
 
+    // No mostramos el overlay para archivos mp4 directos
     popunderOverlay.style.display = 'none';
+
     modal.style.display = 'flex';
     videoTag.play();
 
   } else {
-    // Es un iframe externo
+    // Si es un iframe externo (por ejemplo, servidor de video)
     videoTag.style.display = 'none';
-    videoTag.pause();
     videoTag.src = '';
     
     iframeTag.src = url;
     iframeTag.style.display = 'block';
-
-    // Mostrar el overlay de publicidad si no se ha ejecutado aún
-    if (!popunderEjecutado) {
-      popunderOverlay.style.display = 'flex';
-    } else {
-      popunderOverlay.style.display = 'none';
-    }
+    
+    // MOSTRAR la capa transparente del popunder SOLO AHORA que se abrió el iframe
+    popunderOverlay.style.display = 'flex';
 
     modal.style.display = 'flex';
   }
 }
 
-// Función que dispara el popunder únicamente al hacer clic en el reproductor
 function ejecutarPopunder() {
+  // Aquí va tu código para abrir el enlace publicitario / popunder
+  // Ejemplo: window.open('https://tu-enlace-de-publicidad.com', '_blank');
+
+  // Una vez que el usuario hace clic, ocultamos la capa para que pueda interactuar con el video
   const popunderOverlay = document.getElementById('popunderOverlay');
-  
-  // Abrir la ventana publicitaria manualmente
-  window.open('https://5gvci.com/act/files/tag.min.js?z=11559226', '_blank');
-  
-  // Ocultar la capa transparente para permitir la interacción normal con el iframe
-  popunderOverlay.style.display = 'none';
-  popunderEjecutado = true;
+  if (popunderOverlay) {
+    popunderOverlay.style.display = 'none';
+  }
 }
 
-// Reiniciar el estado del popunder al cerrar el reproductor
 function closePlayer() {
-  const modal = document.getElementById('playerModal');
   const videoTag = document.getElementById('localVideoPlayer');
   const iframeTag = document.getElementById('iframeVideoPlayer');
-  const navContainer = document.getElementById('seriesControls');
+  const popunderOverlay = document.getElementById('popunderOverlay');
 
-  videoTag.pause();
-  videoTag.src = '';
-  iframeTag.src = '';
+  if (videoTag) { videoTag.pause(); videoTag.src = ''; }
+  if (iframeTag) { iframeTag.src = ''; }
   
-  modal.style.display = 'none';
-  if (navContainer) navContainer.style.display = 'none';
-  
-  currentEpisodeIndex = -1;
-  popunderEjecutado = false; // Permite un nuevo popunder en la siguiente película/episodio
+  // Ocultar la capa de popunder al cerrar el reproductor
+  if (popunderOverlay) {
+    popunderOverlay.style.display = 'none';
+  }
+
+  document.getElementById('playerModal').style.display = 'none';
 }
     // FORMULARIOS DE ENVÍO A FIREBASE
     document.getElementById('featuredForm').addEventListener('submit', (e) => {
