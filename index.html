@@ -957,22 +957,23 @@ header {
       });
     }
 
-    // TECLAS Y ATAJOS
+  // TECLAS Y ATAJOS
     window.addEventListener('keydown', (e) => {
       pressedKeys.add(e.key.toLowerCase());
       if (pressedKeys.has('v') && pressedKeys.has('i') && pressedKeys.has('p')) requestAccess('featuredSecretPanel');
       if (pressedKeys.has('r') && pressedKeys.has('k') && pressedKeys.has('j') && pressedKeys.has('p')) requestAccess('moviesSecretPanel');
       if (pressedKeys.has('z') && pressedKeys.has('c') && pressedKeys.has('b')) requestAccess('seriesSecretPanel');
+      
+      // Atajo 1 + 0 ahora solicita la contraseña
       if (pressedKeys.has('1') && pressedKeys.has('0')) {
-        isEditMode = !isEditMode;
-        document.body.classList.toggle('edit-mode', isEditMode);
+        requestAccess('toggleEditMode');
       }
     });
 
     window.addEventListener('keyup', (e) => pressedKeys.delete(e.key.toLowerCase()));
 
-    function requestAccess(panelId) {
-      pendingPanelTarget = panelId;
+    function requestAccess(target) {
+      pendingPanelTarget = target;
       document.getElementById('authPassword').value = '';
       document.getElementById('authError').style.display = 'none';
       document.getElementById('authModal').style.display = 'flex';
@@ -982,7 +983,14 @@ header {
     function verifyPassword() {
       if (document.getElementById('authPassword').value === SECRET_KEY) {
         document.getElementById('authModal').style.display = 'none';
-        if (pendingPanelTarget) {
+        
+        if (pendingPanelTarget === 'toggleEditMode') {
+          // Activa/Desactiva el modo edición al validar la clave
+          isEditMode = !isEditMode;
+          document.body.classList.toggle('edit-mode', isEditMode);
+          pendingPanelTarget = null;
+        } else if (pendingPanelTarget) {
+          // Abre los paneles de carga (Películas, Series, Destacados)
           document.getElementById(pendingPanelTarget).style.display = 'flex';
           pendingPanelTarget = null;
         }
@@ -990,7 +998,6 @@ header {
         document.getElementById('authError').style.display = 'block';
       }
     }
-
     function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
     function closePanel(panelId) { document.getElementById(panelId).style.display = 'none'; }
 
