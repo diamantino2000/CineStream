@@ -934,29 +934,7 @@ header {
     const SECRET_KEY = "Barcelona10";
     
     // Almacenes de Firebase en tiempo real
-    let catalog = { movies: [], series: [] };
-
-function loadCatalogFromAPI() {
-  // La barra / al inicio es clave para que funcione desde cualquier ruta
-  fetch('/api/media')
-    .then(response => response.json())
-    .then(data => {
-      catalog = data;
-      // Dibujar catálogo
-     // Ejemplo de dónde colocarlo:
-renderMedia('movies');
-renderMedia('series');
-
-// ¡AGREGA ESTA LÍNEA AQUÍ!
-checkUrlAndOpenModal();
-
-      // Verificar si hay una película o serie en la URL para abrirla automáticamente
-    })
-    .catch(err => console.error("Error cargando el catálogo:", err));
-}
-
-// Ejecutar la carga siempre que la página se inicie
-window.addEventListener('DOMContentLoaded', loadCatalogFromAPI);
+    let catalog = { featured: {}, movies: {}, series: {} };
 
     window.addEventListener('load', () => {
       // Esperar a que Firebase cargue
@@ -1060,100 +1038,83 @@ window.addEventListener('DOMContentLoaded', loadCatalogFromAPI);
       }
     }
 
-   function renderMedia(type) {
-  const isMovie = type === 'movies';
-  const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
-  const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
-  const items = catalog[type] || {};
-  const keys = Object.keys(items);
+    function renderMedia(type) {
+      const isMovie = type === 'movies';
+      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
+      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
+      const items = catalog[type] || {};
+      const keys = Object.keys(items);
 
-  container.innerHTML = '';
-  if (keys.length === 0) {
-    emptyMsg.style.display = 'block';
-  } else {
-    emptyMsg.style.display = 'none';
-    keys.forEach(key => {
-      const item = items[key];
-      const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="${item.title}">` : '<div class="poster-img" style="background:#222;"></div>';
-      const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
-      
-      const routePath = type === 'movies' ? `/pelicula/${key}` : `/serie/${key}`;
+      container.innerHTML = '';
+      if (keys.length === 0) {
+        emptyMsg.style.display = 'block';
+      } else {
+        emptyMsg.style.display = 'none';
+        keys.forEach(key => {
+          const item = items[key];
+          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
+          const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
 
-      container.innerHTML += `
-        <div class="movie-card" onclick="openInfoModalNav(event, '${type}', '${key}')">
-          ${posterHTML}
-          <div class="card-info">
-            <div class="card-title">${item.title}</div>
-          </div>
-        </div>
-      `;
-    }); // Cierra el keys.forEach
-  } // Cierra el else
-} // Cierra la función renderMedia
-   function openInfoModal(type, id) {
-  // 1. Buscar en el catálogo la película o serie que coincida con la ID
-  const items = catalog[type] || [];
-  
-  // Soporta tanto listas (Flask/JSON) como objetos (Firebase)
-  let item = null;
-  if (Array.isArray(items)) {
-    item = items.find(m => str(m.id) === str(id));
-  } else {
-    item = items[id];
-  }
-
-  if (!item) return;
-
-  // 2. Llenar la información del Modal
-  document.getElementById('infoTitle').innerText = item.title || 'Sin título';
-  document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
-  document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : 'Serie';
-  
-  // Soporta tanto cover_url como poster
-  const coverImg = item.cover_url || item.poster;
-  document.getElementById('infoHero').style.backgroundImage = coverImg ? `url('${coverImg}')` : 'none';
-
-  const playBtn = document.getElementById('infoPlayBtn');
-  const epContainer = document.getElementById('episodesListContainer');
-
-  if (type === 'series') {
-    playBtn.style.display = 'none';
-    epContainer.style.display = 'block';
-    const episodes = item.episodes || [];
-    let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
-
-    if (episodes.length === 0) {
-      epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
-    } else {
-      episodes.sort((a,b) => a.season - b.season || a.ep_num - b.ep_num).forEach(ep => {
-        const videoSrc = ep.video_url || ep.src;
-        epsHtml += `
-          <div class="ep-item" onclick="closeInfoModal(); playMedia('${videoSrc}')">
-            <div>T${ep.season} - E${ep.ep_num || ep.epNum} : ${ep.ep_title || ep.title || 'Episodio'}</div>
-            <span>▶ Ver</span>
-          </div>`;
-      });
+          container.innerHTML += `
+            <div class="movie-card">
+              <div onclick="openInfoModal('${type}', '${key}')">
+                ${posterHTML}
+                <div class="card-info">
+                  <div class="card-title">${item.title}</div>
+                </div>
+              </div>
+              <div class="edit-controls">
+                ${extraBtn}
+                <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
+              </div>
+            </div>
+          `;
+        });
+      }
     }
-    epContainer.innerHTML = epsHtml + '</div>';
-  } else {
-    playBtn.style.display = 'inline-flex';
-    epContainer.style.display = 'none';
-    playBtn.onclick = () => {
-      closeInfoModal();
-      const videoSrc = item.video_url || item.src;
-      if(videoSrc) playMedia(videoSrc);
-      else alert("Sin enlace de video.");
-    };
-  }
 
-  document.getElementById('infoModal').style.display = 'flex';
-}
+    function openInfoModal(type, key) {
+      const item = catalog[type]?.[key];
+      if (!item) return;
 
-// Función auxiliar para comparar strings de forma segura
-function str(val) {
-  return val ? String(val) : '';
-}
+      document.getElementById('infoTitle').innerText = item.title;
+      document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
+      document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : (type === 'series' ? 'Serie' : 'Destacado');
+      document.getElementById('infoHero').style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
 
+      const playBtn = document.getElementById('infoPlayBtn');
+      const epContainer = document.getElementById('episodesListContainer');
+
+      if (type === 'series') {
+        playBtn.style.display = 'none';
+        epContainer.style.display = 'block';
+        const episodes = item.episodes ? Object.values(item.episodes) : [];
+        let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
+
+        if (episodes.length === 0) {
+          epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
+        } else {
+          episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum).forEach(ep => {
+            epsHtml += `
+              <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
+                <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
+                <span>▶ Ver</span>
+              </div>`;
+          });
+        }
+        epContainer.innerHTML = epsHtml + '</div>';
+      } else {
+        playBtn.style.display = 'inline-flex';
+        epContainer.style.display = 'none';
+        playBtn.onclick = () => {
+          closeInfoModal();
+          if(item.src) playMedia(item.src);
+          else alert("Sin enlace de video.");
+        };
+      }
+
+      document.getElementById('infoModal').style.display = 'flex';
+    }
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 function playMedia(url) {
@@ -1411,72 +1372,6 @@ function closePlayer() {
   modal.style.display = 'none';
   navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
   currentEpisodeIndex = -1;
-} 
-function openInfoModalNav(event, type, id) {
-    if (event) {
-      event.preventDefault();
-    }
-
-    const routeType = type === 'movies' ? 'pelicula' : 'serie';
-    // Se agrega el '#' antes de la ruta para evitar el error "Not Found"
-    const newUrl = `/${routeType}/${id}`;
-history.pushState({ type, id }, '', newUrl);
-
-    openInfoModal(type, id);
-  }
-
-  function checkUrlAndOpenModal() {
-    // Leemos la ruta desde el Hash (#)
-    const hash = window.location.hash; // Ej: "#/pelicula/1"
-    
-    if (hash) {
-      const pathParts = hash.replace('#/', '').split('/').filter(Boolean);
-      // Ej: "pelicula/1" -> ["pelicula", "1"]
-
-      if (pathParts.length >= 2) {
-        const routeType = pathParts[0];
-        const mediaId = pathParts[1];
-        const type = routeType === 'pelicula' ? 'movies' : (routeType === 'serie' ? 'series' : null);
-
-        if (type) {
-          setTimeout(() => {
-            openInfoModal(type, mediaId);
-          }, 300);
-        }
-      }
-    }
-  }
-        function checkUrlAndOpenModal() {
-  const hash = window.location.hash; // Captura "#/pelicula/-P0LLiy-yN40SXd72vM0"
-  
-  if (hash) {
-    const pathParts = hash.replace('#/', '').split('/').filter(Boolean);
-
-    if (pathParts.length >= 2) {
-      const routeType = pathParts[0]; // "pelicula" o "serie"
-      const mediaId = pathParts[1];   // "-P0LLiy-yN40SXd72vM0"
-      const type = routeType === 'pelicula' ? 'movies' : (routeType === 'serie' ? 'series' : null);
-
-      if (type) {
-        // Revisa cada 200ms si el catálogo ya cargó los datos
-        let intentos = 0;
-        const interval = setInterval(() => {
-          intentos++;
-          
-          // Si el catálogo ya tiene datos cargados
-          if (catalog[type] && Object.keys(catalog[type]).length > 0) {
-            clearInterval(interval);
-            openInfoModal(type, mediaId);
-          }
-          
-          // Cancela si pasa mucho tiempo (10 segundos) y no se encuentra nada
-          if (intentos > 50) {
-            clearInterval(interval);
-          }
-        }, 200);
-      }
-    }
-  }
 }
 </script>
   </script>
