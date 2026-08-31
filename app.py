@@ -4,7 +4,6 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 
-# --- CONFIGURACIÓN DE CARPETAS Y BASE DE DATOS ---
 COVERS_FOLDER = os.path.join('static', 'uploads', 'covers')
 VIDEOS_FOLDER = os.path.join('static', 'uploads', 'videos')
 DB_FILE = 'database.json'
@@ -28,7 +27,9 @@ def save_catalog(data):
     with open(DB_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-# --- RUTAS DE API Y STREAMING ---
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/api/media')
 def get_media():
@@ -40,7 +41,6 @@ def stream_video(filename):
     return send_from_directory(VIDEOS_FOLDER, filename)
 
 # --- RUTAS DE PELÍCULAS ---
-
 @app.route('/upload/movie', methods=['POST'])
 def upload_movie():
     title = request.form.get('title')
@@ -75,7 +75,7 @@ def upload_movie():
 
 @app.route('/edit/movie/<id_pelicula>', methods=['POST'])
 def edit_movie(id_pelicula):
-    data = request.get_json() or {}
+    data = request.get_json()
     new_title = data.get('title')
     catalog = load_catalog()
     for m in catalog.get('movies', []):
@@ -93,7 +93,6 @@ def delete_movie(id_pelicula):
     return jsonify({'success': True})
 
 # --- RUTAS DE SERIES ---
-
 @app.route('/upload/series', methods=['POST'])
 def upload_series():
     catalog = load_catalog()
@@ -101,19 +100,10 @@ def upload_series():
     season = int(request.form.get('season', 1))
     ep_num = int(request.form.get('ep_num', 1))
     ep_title = request.form.get('ep_title', f'Episodio {ep_num}')
-    
+    video_filename = request.form.get('video_filename') or request.form.get('video')
     cover_file = request.files.get('cover')
-    video_file = request.files.get('video')
 
-    if not title:
-        return jsonify({'success': False, 'error': 'El título es obligatorio'}), 400
-
-    video_filename = None
-    if video_file and video_file.filename:
-        video_filename = video_file.filename
-        video_path = os.path.join(VIDEOS_FOLDER, video_filename)
-        video_file.save(video_path)
-
+    # Buscar serie existente
     series_item = next((s for s in catalog['series'] if s['title'].lower() == title.lower()), None)
 
     if not series_item:
@@ -140,15 +130,6 @@ def upload_series():
     series_item['episodes'].append(nuevo_ep)
     save_catalog(catalog)
     return jsonify({'success': True})
-
-# --- CAPTURA DE TODAS LAS RUTAS (MANEJO DE SPA E INDEX) ---
-
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def catch_all(path):
-    return render_template('index.html')
-
-# --- ARRANCAR SERVIDOR ---
 
 if __name__ == '__main__':
     print("🎬 CineStream Local ejecutándose en http://127.0.0.1:5000")
