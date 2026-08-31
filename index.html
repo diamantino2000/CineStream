@@ -934,7 +934,26 @@ header {
     const SECRET_KEY = "Barcelona10";
     
     // Almacenes de Firebase en tiempo real
-    let catalog = { featured: {}, movies: {}, series: {} };
+    let catalog = { movies: [], series: [] };
+
+function loadCatalogFromAPI() {
+  // La barra / al inicio es clave para que funcione desde cualquier ruta
+  fetch('/api/media')
+    .then(response => response.json())
+    .then(data => {
+      catalog = data;
+      // Dibujar catálogo
+      renderMedia('movies');
+      renderMedia('series');
+
+      // Verificar si hay una película o serie en la URL para abrirla automáticamente
+      checkUrlAndOpenModal();
+    })
+    .catch(err => console.error("Error cargando el catálogo:", err));
+}
+
+// Ejecutar la carga siempre que la página se inicie
+window.addEventListener('DOMContentLoaded', loadCatalogFromAPI);
 
     window.addEventListener('load', () => {
       // Esperar a que Firebase cargue
@@ -1402,6 +1421,20 @@ function closePlayer() {
 
   // Llama a tu función que abre el modal con la información
   openInfoModal(type, id);
+}
+        function checkUrlAndOpenModal() {
+  const pathParts = window.location.pathname.split('/').filter(Boolean); 
+  // Ej: /pelicula/1 -> ["pelicula", "1"]
+
+  if (pathParts.length >= 2) {
+    const routeType = pathParts[0]; // "pelicula" o "serie"
+    const mediaId = pathParts[1];   // "1", "2", etc.
+    const type = routeType === 'pelicula' ? 'movies' : (routeType === 'serie' ? 'series' : null);
+
+    if (type && mediaId) {
+      openInfoModal(type, mediaId);
+    }
+  }
 }
 </script>
   </script>
