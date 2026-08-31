@@ -1076,25 +1076,28 @@ header {
     });
   }
 }
-    function openInfoModal(type, key) {
-  const item = catalog[type]?.[key];
-  if (!item) return;
-
-  // 1. CAMBIO DE URL EN LA BARRA DEL NAVEGADOR
-  // Genera la URL según el tipo (ej: /pelicula/KEY o /serie/KEY)
-  const routeType = type === 'movies' ? 'pelicula' : (type === 'series' ? 'serie' : 'destacado');
-  const newUrl = `/${routeType}/${key}`;
-
-  // Actualiza la barra de direcciones sin recargar la página
-  if (window.location.pathname !== newUrl) {
-    history.pushState({ type, key }, '', newUrl);
+   function openInfoModal(type, id) {
+  // 1. Buscar en el catálogo la película o serie que coincida con la ID
+  const items = catalog[type] || [];
+  
+  // Soporta tanto listas (Flask/JSON) como objetos (Firebase)
+  let item = null;
+  if (Array.isArray(items)) {
+    item = items.find(m => str(m.id) === str(id));
+  } else {
+    item = items[id];
   }
 
-  // 2. LLENADO DE DATOS DEL MODAL (TU CÓDIGO ORIGINAL)
-  document.getElementById('infoTitle').innerText = item.title;
+  if (!item) return;
+
+  // 2. Llenar la información del Modal
+  document.getElementById('infoTitle').innerText = item.title || 'Sin título';
   document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
-  document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : (type === 'series' ? 'Serie' : 'Destacado');
-  document.getElementById('infoHero').style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
+  document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : 'Serie';
+  
+  // Soporta tanto cover_url como poster
+  const coverImg = item.cover_url || item.poster;
+  document.getElementById('infoHero').style.backgroundImage = coverImg ? `url('${coverImg}')` : 'none';
 
   const playBtn = document.getElementById('infoPlayBtn');
   const epContainer = document.getElementById('episodesListContainer');
@@ -1102,16 +1105,17 @@ header {
   if (type === 'series') {
     playBtn.style.display = 'none';
     epContainer.style.display = 'block';
-    const episodes = item.episodes ? Object.values(item.episodes) : [];
+    const episodes = item.episodes || [];
     let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
 
     if (episodes.length === 0) {
       epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
     } else {
-      episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum).forEach(ep => {
+      episodes.sort((a,b) => a.season - b.season || a.ep_num - b.ep_num).forEach(ep => {
+        const videoSrc = ep.video_url || ep.src;
         epsHtml += `
-          <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
-            <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
+          <div class="ep-item" onclick="closeInfoModal(); playMedia('${videoSrc}')">
+            <div>T${ep.season} - E${ep.ep_num || ep.epNum} : ${ep.ep_title || ep.title || 'Episodio'}</div>
             <span>▶ Ver</span>
           </div>`;
       });
@@ -1122,13 +1126,20 @@ header {
     epContainer.style.display = 'none';
     playBtn.onclick = () => {
       closeInfoModal();
-      if(item.src) playMedia(item.src);
+      const videoSrc = item.video_url || item.src;
+      if(videoSrc) playMedia(videoSrc);
       else alert("Sin enlace de video.");
     };
   }
 
   document.getElementById('infoModal').style.display = 'flex';
 }
+
+// Función auxiliar para comparar strings de forma segura
+function str(val) {
+  return val ? String(val) : '';
+}
+
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 function playMedia(url) {
