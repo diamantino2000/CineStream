@@ -4,25 +4,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 
-# Ruta principal
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-# Ruta dinámica para películas
-@app.route('/pelicula/<media_id>')
-def pelicula_detalle(media_id):
-    # Flask renderizará el mismo diseño, pasando la ID de la película
-    return render_template('index.html', media_id=media_id, media_type='movies')
-
-# Ruta dinámica para series
-@app.route('/serie/<media_id>')
-def serie_detalle(media_id):
-    return render_template('index.html', media_id=media_id, media_type='series')
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
+# --- CONFIGURACIÓN DE CARPETAS Y BASE DE DATOS ---
 COVERS_FOLDER = os.path.join('static', 'uploads', 'covers')
 VIDEOS_FOLDER = os.path.join('static', 'uploads', 'videos')
 DB_FILE = 'database.json'
@@ -46,9 +28,21 @@ def save_catalog(data):
     with open(DB_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+# --- RUTAS DE NAVEGACIÓN (VISTAS) ---
+
 @app.route('/')
-def index():
+def home():
     return render_template('index.html')
+
+@app.route('/pelicula/<media_id>')
+def pelicula_detalle(media_id):
+    return render_template('index.html', media_id=media_id, media_type='movies')
+
+@app.route('/serie/<media_id>')
+def serie_detalle(media_id):
+    return render_template('index.html', media_id=media_id, media_type='series')
+
+# --- RUTAS DE API Y STREAMING ---
 
 @app.route('/api/media')
 def get_media():
@@ -60,6 +54,7 @@ def stream_video(filename):
     return send_from_directory(VIDEOS_FOLDER, filename)
 
 # --- RUTAS DE PELÍCULAS ---
+
 @app.route('/upload/movie', methods=['POST'])
 def upload_movie():
     title = request.form.get('title')
@@ -112,6 +107,7 @@ def delete_movie(id_pelicula):
     return jsonify({'success': True})
 
 # --- RUTAS DE SERIES ---
+
 @app.route('/upload/series', methods=['POST'])
 def upload_series():
     catalog = load_catalog()
@@ -122,7 +118,6 @@ def upload_series():
     video_filename = request.form.get('video_filename') or request.form.get('video')
     cover_file = request.files.get('cover')
 
-    # Buscar serie existente
     series_item = next((s for s in catalog['series'] if s['title'].lower() == title.lower()), None)
 
     if not series_item:
@@ -149,6 +144,8 @@ def upload_series():
     series_item['episodes'].append(nuevo_ep)
     save_catalog(catalog)
     return jsonify({'success': True})
+
+# --- ARRANCAR SERVIDOR (SIEMPRE AL FINAL DEL ARCHIVO) ---
 
 if __name__ == '__main__':
     print("🎬 CineStream Local ejecutándose en http://127.0.0.1:5000")
