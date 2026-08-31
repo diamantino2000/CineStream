@@ -1039,82 +1039,96 @@ header {
     }
 
     function renderMedia(type) {
-      const isMovie = type === 'movies';
-      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
-      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
-      const items = catalog[type] || {};
-      const keys = Object.keys(items);
+  const isMovie = type === 'movies';
+  const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
+  const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
+  const items = catalog[type] || {};
+  const keys = Object.keys(items);
 
-      container.innerHTML = '';
-      if (keys.length === 0) {
-        emptyMsg.style.display = 'block';
-      } else {
-        emptyMsg.style.display = 'none';
-        keys.forEach(key => {
-          const item = items[key];
-          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
-          const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
+  container.innerHTML = '';
+  if (keys.length === 0) {
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+    keys.forEach(key => {
+      const item = items[key];
+      const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="${item.title}">` : '<div class="poster-img" style="background:#222;"></div>';
+      const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
+      
+      // Definimos la ruta según si es película o serie
+      const routePath = type === 'movies' ? `/pelicula/${key}` : `/serie/${key}`;
 
-          container.innerHTML += `
-            <div class="movie-card">
-              <div onclick="openInfoModal('${type}', '${key}')">
-                ${posterHTML}
-                <div class="card-info">
-                  <div class="card-title">${item.title}</div>
-                </div>
-              </div>
-              <div class="edit-controls">
-                ${extraBtn}
-                <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
-              </div>
+      container.innerHTML += `
+        <div class="movie-card">
+          <!-- Cambiamos div por un enlace <a> con href directo -->
+          <a href="${routePath}" onclick="openInfoModalNav(event, '${type}', '${key}')" style="text-decoration:none; color:inherit;">
+            ${posterHTML}
+            <div class="card-info">
+              <div class="card-title">${item.title}</div>
             </div>
-          `;
-        });
-      }
-    }
-
+          </a>
+          <div class="edit-controls">
+            ${extraBtn}
+            <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+}
     function openInfoModal(type, key) {
-      const item = catalog[type]?.[key];
-      if (!item) return;
+  const item = catalog[type]?.[key];
+  if (!item) return;
 
-      document.getElementById('infoTitle').innerText = item.title;
-      document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
-      document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : (type === 'series' ? 'Serie' : 'Destacado');
-      document.getElementById('infoHero').style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
+  // 1. CAMBIO DE URL EN LA BARRA DEL NAVEGADOR
+  // Genera la URL según el tipo (ej: /pelicula/KEY o /serie/KEY)
+  const routeType = type === 'movies' ? 'pelicula' : (type === 'series' ? 'serie' : 'destacado');
+  const newUrl = `/${routeType}/${key}`;
 
-      const playBtn = document.getElementById('infoPlayBtn');
-      const epContainer = document.getElementById('episodesListContainer');
+  // Actualiza la barra de direcciones sin recargar la página
+  if (window.location.pathname !== newUrl) {
+    history.pushState({ type, key }, '', newUrl);
+  }
 
-      if (type === 'series') {
-        playBtn.style.display = 'none';
-        epContainer.style.display = 'block';
-        const episodes = item.episodes ? Object.values(item.episodes) : [];
-        let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
+  // 2. LLENADO DE DATOS DEL MODAL (TU CÓDIGO ORIGINAL)
+  document.getElementById('infoTitle').innerText = item.title;
+  document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
+  document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : (type === 'series' ? 'Serie' : 'Destacado');
+  document.getElementById('infoHero').style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
 
-        if (episodes.length === 0) {
-          epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
-        } else {
-          episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum).forEach(ep => {
-            epsHtml += `
-              <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
-                <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
-                <span>▶ Ver</span>
-              </div>`;
-          });
-        }
-        epContainer.innerHTML = epsHtml + '</div>';
-      } else {
-        playBtn.style.display = 'inline-flex';
-        epContainer.style.display = 'none';
-        playBtn.onclick = () => {
-          closeInfoModal();
-          if(item.src) playMedia(item.src);
-          else alert("Sin enlace de video.");
-        };
-      }
+  const playBtn = document.getElementById('infoPlayBtn');
+  const epContainer = document.getElementById('episodesListContainer');
 
-      document.getElementById('infoModal').style.display = 'flex';
+  if (type === 'series') {
+    playBtn.style.display = 'none';
+    epContainer.style.display = 'block';
+    const episodes = item.episodes ? Object.values(item.episodes) : [];
+    let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
+
+    if (episodes.length === 0) {
+      epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
+    } else {
+      episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum).forEach(ep => {
+        epsHtml += `
+          <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
+            <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
+            <span>▶ Ver</span>
+          </div>`;
+      });
     }
+    epContainer.innerHTML = epsHtml + '</div>';
+  } else {
+    playBtn.style.display = 'inline-flex';
+    epContainer.style.display = 'none';
+    playBtn.onclick = () => {
+      closeInfoModal();
+      if(item.src) playMedia(item.src);
+      else alert("Sin enlace de video.");
+    };
+  }
+
+  document.getElementById('infoModal').style.display = 'flex';
+}
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 function playMedia(url) {
