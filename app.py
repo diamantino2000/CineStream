@@ -28,20 +28,6 @@ def save_catalog(data):
     with open(DB_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-# --- RUTAS DE NAVEGACIÓN (VISTAS) ---
-
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/pelicula/<media_id>')
-def pelicula_detalle(media_id):
-    return render_template('index.html', media_id=media_id, media_type='movies')
-
-@app.route('/serie/<media_id>')
-def serie_detalle(media_id):
-    return render_template('index.html', media_id=media_id, media_type='series')
-
 # --- RUTAS DE API Y STREAMING ---
 
 @app.route('/api/media')
@@ -89,7 +75,7 @@ def upload_movie():
 
 @app.route('/edit/movie/<id_pelicula>', methods=['POST'])
 def edit_movie(id_pelicula):
-    data = request.get_json()
+    data = request.get_json() or {}
     new_title = data.get('title')
     catalog = load_catalog()
     for m in catalog.get('movies', []):
@@ -115,8 +101,18 @@ def upload_series():
     season = int(request.form.get('season', 1))
     ep_num = int(request.form.get('ep_num', 1))
     ep_title = request.form.get('ep_title', f'Episodio {ep_num}')
-    video_filename = request.form.get('video_filename') or request.form.get('video')
+    
     cover_file = request.files.get('cover')
+    video_file = request.files.get('video')
+
+    if not title:
+        return jsonify({'success': False, 'error': 'El título es obligatorio'}), 400
+
+    video_filename = None
+    if video_file and video_file.filename:
+        video_filename = video_file.filename
+        video_path = os.path.join(VIDEOS_FOLDER, video_filename)
+        video_file.save(video_path)
 
     series_item = next((s for s in catalog['series'] if s['title'].lower() == title.lower()), None)
 
@@ -145,12 +141,14 @@ def upload_series():
     save_catalog(catalog)
     return jsonify({'success': True})
 
-# En tu archivo app.py agrega o modifica esta ruta al final:
+# --- CAPTURA DE TODAS LAS RUTAS (MANEJO DE SPA E INDEX) ---
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):
-    return render_template('index.html') # o send_from_directory('static', 'index.html')
-# --- ARRANCAR SERVIDOR (SIEMPRE AL FINAL DEL ARCHIVO) ---
+    return render_template('index.html')
+
+# --- ARRANCAR SERVIDOR ---
 
 if __name__ == '__main__':
     print("🎬 CineStream Local ejecutándose en http://127.0.0.1:5000")
