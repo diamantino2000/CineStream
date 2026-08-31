@@ -145,6 +145,11 @@ def upload_series():
     save_catalog(catalog)
     return jsonify({'success': True})
 
+# En tu archivo app.py agrega o modifica esta ruta al final:
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    return render_template('index.html') # o send_from_directory('static', 'index.html')
 # --- ARRANCAR SERVIDOR (SIEMPRE AL FINAL DEL ARCHIVO) ---
 
 if __name__ == '__main__':
