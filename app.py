@@ -4,6 +4,25 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 
+# Ruta principal
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Ruta dinámica para películas
+@app.route('/pelicula/<media_id>')
+def pelicula_detalle(media_id):
+    # Flask renderizará el mismo diseño, pasando la ID de la película
+    return render_template('index.html', media_id=media_id, media_type='movies')
+
+# Ruta dinámica para series
+@app.route('/serie/<media_id>')
+def serie_detalle(media_id):
+    return render_template('index.html', media_id=media_id, media_type='series')
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
 COVERS_FOLDER = os.path.join('static', 'uploads', 'covers')
 VIDEOS_FOLDER = os.path.join('static', 'uploads', 'videos')
 DB_FILE = 'database.json'
