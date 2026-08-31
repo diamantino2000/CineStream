@@ -1408,21 +1408,42 @@ function closePlayer() {
   modal.style.display = 'none';
   navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
   currentEpisodeIndex = -1;
-}
-        function openInfoModalNav(event, type, id) {
-  if (event) {
-    event.preventDefault(); // Evita que la página recargue y dé "Not Found"
+} 
+function openInfoModalNav(event, type, id) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    const routeType = type === 'movies' ? 'pelicula' : 'serie';
+    // Se agrega el '#' antes de la ruta para evitar el error "Not Found"
+    const newUrl = `/#/${routeType}/${id}`;
+
+    history.pushState({ type, id }, '', newUrl);
+
+    openInfoModal(type, id);
   }
-  
-  const routeType = type === 'movies' ? 'pelicula' : 'serie';
-  const newUrl = `/${routeType}/${id}`;
 
-  // Cambia la barra de dirección sin pedirle una página nueva a Flask
-  history.pushState({ type, id }, '', newUrl);
+  function checkUrlAndOpenModal() {
+    // Leemos la ruta desde el Hash (#)
+    const hash = window.location.hash; // Ej: "#/pelicula/1"
+    
+    if (hash) {
+      const pathParts = hash.replace('#/', '').split('/').filter(Boolean);
+      // Ej: "pelicula/1" -> ["pelicula", "1"]
 
-  // Llama a tu función que abre el modal con la información
-  openInfoModal(type, id);
-}
+      if (pathParts.length >= 2) {
+        const routeType = pathParts[0];
+        const mediaId = pathParts[1];
+        const type = routeType === 'pelicula' ? 'movies' : (routeType === 'serie' ? 'series' : null);
+
+        if (type) {
+          setTimeout(() => {
+            openInfoModal(type, mediaId);
+          }, 300);
+        }
+      }
+    }
+  }
         function checkUrlAndOpenModal() {
   const pathParts = window.location.pathname.split('/').filter(Boolean); 
   // Ej: /pelicula/1 -> ["pelicula", "1"]
