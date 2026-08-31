@@ -1416,9 +1416,8 @@ function openInfoModalNav(event, type, id) {
 
     const routeType = type === 'movies' ? 'pelicula' : 'serie';
     // Se agrega el '#' antes de la ruta para evitar el error "Not Found"
-    const newUrl = `/#/${routeType}/${id}`;
-
-    history.pushState({ type, id }, '', newUrl);
+    const newUrl = `/${routeType}/${id}`;
+history.pushState({ type, id }, '', newUrl);
 
     openInfoModal(type, id);
   }
