@@ -943,11 +943,14 @@ function loadCatalogFromAPI() {
     .then(data => {
       catalog = data;
       // Dibujar catálogo
-      renderMedia('movies');
-      renderMedia('series');
+     // Ejemplo de dónde colocarlo:
+renderMedia('movies');
+renderMedia('series');
+
+// ¡AGREGA ESTA LÍNEA AQUÍ!
+checkUrlAndOpenModal();
 
       // Verificar si hay una película o serie en la URL para abrirla automáticamente
-      checkUrlAndOpenModal();
     })
     .catch(err => console.error("Error cargando el catálogo:", err));
 }
@@ -1444,16 +1447,34 @@ history.pushState({ type, id }, '', newUrl);
     }
   }
         function checkUrlAndOpenModal() {
-  const pathParts = window.location.pathname.split('/').filter(Boolean); 
-  // Ej: /pelicula/1 -> ["pelicula", "1"]
+  const hash = window.location.hash; // Captura "#/pelicula/-P0LLiy-yN40SXd72vM0"
+  
+  if (hash) {
+    const pathParts = hash.replace('#/', '').split('/').filter(Boolean);
 
-  if (pathParts.length >= 2) {
-    const routeType = pathParts[0]; // "pelicula" o "serie"
-    const mediaId = pathParts[1];   // "1", "2", etc.
-    const type = routeType === 'pelicula' ? 'movies' : (routeType === 'serie' ? 'series' : null);
+    if (pathParts.length >= 2) {
+      const routeType = pathParts[0]; // "pelicula" o "serie"
+      const mediaId = pathParts[1];   // "-P0LLiy-yN40SXd72vM0"
+      const type = routeType === 'pelicula' ? 'movies' : (routeType === 'serie' ? 'series' : null);
 
-    if (type && mediaId) {
-      openInfoModal(type, mediaId);
+      if (type) {
+        // Revisa cada 200ms si el catálogo ya cargó los datos
+        let intentos = 0;
+        const interval = setInterval(() => {
+          intentos++;
+          
+          // Si el catálogo ya tiene datos cargados
+          if (catalog[type] && Object.keys(catalog[type]).length > 0) {
+            clearInterval(interval);
+            openInfoModal(type, mediaId);
+          }
+          
+          // Cancela si pasa mucho tiempo (10 segundos) y no se encuentra nada
+          if (intentos > 50) {
+            clearInterval(interval);
+          }
+        }, 200);
+      }
     }
   }
 }
