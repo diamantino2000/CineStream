@@ -1091,10 +1091,12 @@ header {
         });
       }
     }
-
-    let currentPage = 1;
+// 1. Nuevas variables de control independientes
+let currentMoviePage = 2;
+let currentSeriesPage = 2;
 const itemsPerPage = 12;
 
+// 2. Función renderMedia actualizada para leer la página correcta según el tipo
 function renderMedia(type) {
   const isMovie = type === 'movies';
   const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
@@ -1106,13 +1108,14 @@ function renderMedia(type) {
 
   if (keys.length === 0) {
     emptyMsg.style.display = 'block';
-    renderPagination(0);
+    renderPagination(type, 0);
     return;
   }
 
   emptyMsg.style.display = 'none';
 
-  // Calcular paginación
+  // Selecciona la página actual dependiendo de si es 'movies' o 'series'
+  const currentPage = isMovie ? currentMoviePage : currentSeriesPage;
   const totalPages = Math.ceil(keys.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedKeys = keys.slice(startIndex, startIndex + itemsPerPage);
@@ -1138,13 +1141,18 @@ function renderMedia(type) {
     `;
   });
 
-  renderPagination(totalPages);
+  renderPagination(type, totalPages);
 }
 
-function renderPagination(totalPages) {
-  const controls = document.getElementById('paginationControls');
-  const info = document.getElementById('pageInfo');
+// 3. Renderiza los controles de la barra correspondiente
+function renderPagination(type, totalPages) {
+  const isMovie = type === 'movies';
+  const currentPage = isMovie ? currentMoviePage : currentSeriesPage;
+  const controls = document.getElementById(isMovie ? 'moviesPaginationControls' : 'seriesPaginationControls');
+  const info = document.getElementById(isMovie ? 'moviesPageInfo' : 'seriesPageInfo');
   
+  if (!controls || !info) return;
+
   if (totalPages <= 1) {
     controls.innerHTML = '';
     info.innerText = '';
@@ -1154,61 +1162,24 @@ function renderPagination(totalPages) {
   info.innerText = `Page ${currentPage} of ${totalPages}`;
   let html = '';
 
-  // Generar botones numéricos
   for (let i = 1; i <= Math.min(totalPages, 5); i++) {
-    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage('${type}', ${i})">${i}</button>`;
   }
 
-  // Botón Siguiente (>)
-  html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">›</button>`;
+  html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage + 1})">›</button>`;
 
   controls.innerHTML = html;
 }
 
-function changePage(page) {
-  currentPage = page;
-  renderMedia('movies'); // o la sección que estés paginando
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+// 4. Cambia la página según la sección que haya enviado el clic
+function changePage(type, page) {
+  if (type === 'movies') {
+    currentMoviePage = page;
+  } else {
+    currentSeriesPage = page;
+  }
+  renderMedia(type);
 }
-    function openInfoModal(type, key) {
-      const item = catalog[type]?.[key];
-      if (!item) return;
-
-      document.getElementById('infoTitle').innerText = item.title;
-      document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
-      document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : (type === 'series' ? 'Serie' : 'Destacado');
-      document.getElementById('infoHero').style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
-
-      const playBtn = document.getElementById('infoPlayBtn');
-      const epContainer = document.getElementById('episodesListContainer');
-
-      if (type === 'series') {
-        playBtn.style.display = 'none';
-        epContainer.style.display = 'block';
-        const episodes = item.episodes ? Object.values(item.episodes) : [];
-        let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
-
-        if (episodes.length === 0) {
-          epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
-        } else {
-          episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum).forEach(ep => {
-            epsHtml += `
-              <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
-                <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
-                <span>▶ Ver</span>
-              </div>`;
-          });
-        }
-        epContainer.innerHTML = epsHtml + '</div>';
-      } else {
-        playBtn.style.display = 'inline-flex';
-        epContainer.style.display = 'none';
-        playBtn.onclick = () => {
-          closeInfoModal();
-          if(item.src) playMedia(item.src);
-          else alert("Sin enlace de video.");
-        };
-      }
 
       document.getElementById('infoModal').style.display = 'flex';
     }
