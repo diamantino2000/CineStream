@@ -1058,24 +1058,15 @@ header {
       // Definimos la ruta según si es película o serie
       const routePath = type === 'movies' ? `/pelicula/${key}` : `/serie/${key}`;
 
-      container.innerHTML += `
-        <div class="movie-card">
-          <!-- Cambiamos div por un enlace <a> con href directo -->
-          <a href="${routePath}" onclick="openInfoModalNav(event, '${type}', '${key}')" style="text-decoration:none; color:inherit;">
-            ${posterHTML}
-            <div class="card-info">
-              <div class="card-title">${item.title}</div>
-            </div>
-          </a>
-          <div class="edit-controls">
-            ${extraBtn}
-            <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
-          </div>
-        </div>
-      `;
-    });
-  }
-}
+      // En lugar de poner un <a href="..."> normal, hazlo llamar a la función pasando el evento
+container.innerHTML += `
+  <div class="movie-card" onclick="openInfoModalNav(event, '${type}', '${item.id}')">
+    ${posterHTML}
+    <div class="card-info">
+      <div class="card-title">${item.title}</div>
+    </div>
+  </div>
+`;
    function openInfoModal(type, id) {
   // 1. Buscar en el catálogo la película o serie que coincida con la ID
   const items = catalog[type] || [];
@@ -1397,6 +1388,20 @@ function closePlayer() {
   modal.style.display = 'none';
   navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
   currentEpisodeIndex = -1;
+}
+        function openInfoModalNav(event, type, id) {
+  if (event) {
+    event.preventDefault(); // Evita que la página recargue y dé "Not Found"
+  }
+  
+  const routeType = type === 'movies' ? 'pelicula' : 'serie';
+  const newUrl = `/${routeType}/${id}`;
+
+  // Cambia la barra de dirección sin pedirle una página nueva a Flask
+  history.pushState({ type, id }, '', newUrl);
+
+  // Llama a tu función que abre el modal con la información
+  openInfoModal(type, id);
 }
 </script>
   </script>
