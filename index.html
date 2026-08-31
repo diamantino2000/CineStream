@@ -1057,7 +1057,7 @@ window.addEventListener('DOMContentLoaded', loadCatalogFromAPI);
       }
     }
 
-    function renderMedia(type) {
+   function renderMedia(type) {
   const isMovie = type === 'movies';
   const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
   const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
@@ -1074,18 +1074,19 @@ window.addEventListener('DOMContentLoaded', loadCatalogFromAPI);
       const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="${item.title}">` : '<div class="poster-img" style="background:#222;"></div>';
       const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
       
-      // Definimos la ruta según si es película o serie
       const routePath = type === 'movies' ? `/pelicula/${key}` : `/serie/${key}`;
 
-      // En lugar de poner un <a href="..."> normal, hazlo llamar a la función pasando el evento
-container.innerHTML += `
-  <div class="movie-card" onclick="openInfoModalNav(event, '${type}', '${item.id}')">
-    ${posterHTML}
-    <div class="card-info">
-      <div class="card-title">${item.title}</div>
-    </div>
-  </div>
-`;
+      container.innerHTML += `
+        <div class="movie-card" onclick="openInfoModalNav(event, '${type}', '${key}')">
+          ${posterHTML}
+          <div class="card-info">
+            <div class="card-title">${item.title}</div>
+          </div>
+        </div>
+      `;
+    }); // Cierra el keys.forEach
+  } // Cierra el else
+} // Cierra la función renderMedia
    function openInfoModal(type, id) {
   // 1. Buscar en el catálogo la película o serie que coincida con la ID
   const items = catalog[type] || [];
