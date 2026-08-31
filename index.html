@@ -732,7 +732,52 @@ header {
   .ep-nav-title {
     font-size: 13px;
   }
-}     
+}   
+        .pagination-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 30px 0;
+  gap: 10px;
+}
+
+.pagination-info {
+  color: #888;
+  font-size: 14px;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.page-btn {
+  background: #1a1a1a;
+  color: #ffffff;
+  border: 1px solid #282828;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(.active):not(:disabled) {
+  background: #333;
+}
+
+.page-btn.active {
+  background: #e5a900; /* Color amarillo de la imagen */
+  color: #000;
+  border-color: #e5a900;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
   </style>
 
   <!-- LIBRERÍAS DE FIREBASE (MÓDULOS) -->
@@ -785,6 +830,11 @@ header {
   <div class="section-title">Películas</div>
   <div id="moviesContainer" class="movie-grid"></div>
   <div id="noMoviesMsg" class="empty-msg">No hay películas.</div>
+
+    <div class="pagination-container">
+  <div class="pagination-info" id="pageInfo">Page 1 of 1</div>
+  <div class="pagination-controls" id="paginationControls"></div>
+</div>
 
   <div class="section-title">Series</div>
   <div id="seriesContainer" class="movie-grid"></div>
@@ -1038,41 +1088,84 @@ header {
       }
     }
 
-    function renderMedia(type) {
-      const isMovie = type === 'movies';
-      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
-      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
-      const items = catalog[type] || {};
-      const keys = Object.keys(items);
+    let currentPage = 1;
+const itemsPerPage = 12;
 
-      container.innerHTML = '';
-      if (keys.length === 0) {
-        emptyMsg.style.display = 'block';
-      } else {
-        emptyMsg.style.display = 'none';
-        keys.forEach(key => {
-          const item = items[key];
-          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
-          const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
+function renderMedia(type) {
+  const isMovie = type === 'movies';
+  const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
+  const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
+  const items = catalog[type] || {};
+  const keys = Object.keys(items);
 
-          container.innerHTML += `
-            <div class="movie-card">
-              <div onclick="openInfoModal('${type}', '${key}')">
-                ${posterHTML}
-                <div class="card-info">
-                  <div class="card-title">${item.title}</div>
-                </div>
-              </div>
-              <div class="edit-controls">
-                ${extraBtn}
-                <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
-              </div>
-            </div>
-          `;
-        });
-      }
-    }
+  container.innerHTML = '';
 
+  if (keys.length === 0) {
+    emptyMsg.style.display = 'block';
+    renderPagination(0);
+    return;
+  }
+
+  emptyMsg.style.display = 'none';
+
+  // Calcular paginación
+  const totalPages = Math.ceil(keys.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedKeys = keys.slice(startIndex, startIndex + itemsPerPage);
+
+  paginatedKeys.forEach(key => {
+    const item = items[key];
+    const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
+    const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
+
+    container.innerHTML += `
+      <div class="movie-card">
+        <div onclick="openInfoModal('${type}', '${key}')">
+          ${posterHTML}
+          <div class="card-info">
+            <div class="card-title">${item.title}</div>
+          </div>
+        </div>
+        <div class="edit-controls">
+          ${extraBtn}
+          <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
+        </div>
+      </div>
+    `;
+  });
+
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const controls = document.getElementById('paginationControls');
+  const info = document.getElementById('pageInfo');
+  
+  if (totalPages <= 1) {
+    controls.innerHTML = '';
+    info.innerText = '';
+    return;
+  }
+
+  info.innerText = `Page ${currentPage} of ${totalPages}`;
+  let html = '';
+
+  // Generar botones numéricos
+  for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+  }
+
+  // Botón Siguiente (>)
+  html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">›</button>`;
+
+  controls.innerHTML = html;
+}
+
+function changePage(page) {
+  currentPage = page;
+  renderMedia('movies'); // o la sección que estés paginando
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
     function openInfoModal(type, key) {
       const item = catalog[type]?.[key];
       if (!item) return;
