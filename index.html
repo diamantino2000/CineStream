@@ -1506,6 +1506,15 @@ function addNewPage() {
 
 // Ejecutar al cargar la página
 window.addEventListener('load', () => renderPagination());
+      <script>
+  // Carga los datos guardados en Firebase y los muestra en pantalla
+  window.addEventListener('load', () => {
+    window.dbOnValue(window.dbRef(window.db, 'catalog'), (snapshot) => {
+      const catalog = snapshot.val() || {};
+      console.log("Datos cargados:", catalog);
+    });
+  });
+</script>
 </script>
   </script>
   <script>
