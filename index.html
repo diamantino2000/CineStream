@@ -1215,7 +1215,7 @@ function renderMedia(type) {
 
     if (!container) return;
 
-    // 1. Vacía la pantalla para evitar que las películas se amontonen o dupliquen
+    // Limpia para no duplicar elementos
     container.innerHTML = '';
 
     if (keys.length === 0) {
@@ -1226,15 +1226,20 @@ function renderMedia(type) {
 
     if (emptyMsg) emptyMsg.style.display = 'none';
 
-    // 2. Filtra exactamente cuáles 12 películas mostrar en la página actual
+    // Paginación limpia (12 elementos por página)
     const currentPage = type === 'movies' ? currentPageMovies : currentPageSeries;
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const paginatedKeys = keys.slice(startIndex, endIndex);
 
-    // 3. Dibuja solo el grupo de la página seleccionada
     paginatedKeys.forEach(key => {
         const item = items[key];
+
+        // Módulo de botones extra solo si es una serie (+Episodio)
+        const epButtonHTML = (type === 'series') 
+            ? `<button class="btn-danger" style="background:#28a745;" onclick="event.stopPropagation(); openEpisodePanel('${key}')">+Ep</button>` 
+            : '';
+
         container.innerHTML += `
             <div class="movie-card" onclick="openInfoModal('${type}', '${key}')">
                 <img src="${item.poster}" class="poster-img" alt="${item.title}">
@@ -1242,14 +1247,20 @@ function renderMedia(type) {
                     <div class="card-title">${item.title}</div>
                 </div>
                 <div class="edit-controls">
+                    ${epButtonHTML}
                     <button class="btn-danger" onclick="event.stopPropagation(); deleteMediaItem('${type}', '${key}')">Eliminar</button>
                 </div>
             </div>
         `;
     });
 
-    // 4. Actualiza la barra numerada (1, 2, >)
     renderPagination(type, keys.length);
+}
+
+// Función para abrir el panel de agregar episodios
+function openEpisodePanel(seriesKey) {
+    document.getElementById('epSerieKey').value = seriesKey;
+    document.getElementById('episodeSecretPanel').style.display = 'flex';
 }
 
     function openInfoModal(type, key) {
