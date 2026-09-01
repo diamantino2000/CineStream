@@ -1410,20 +1410,53 @@ function closePlayer() {
       document.getElementById('episodeSecretPanel').style.display = 'flex';
     }
 
-    document.getElementById('episodeForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const seriesKey = document.getElementById('epSerieKey').value;
-      const episodeData = {
-        season: parseInt(document.getElementById('epSeason').value),
-        epNum: parseInt(document.getElementById('epNumber').value),
-        title: document.getElementById('epTitle').value,
-        src: document.getElementById('epSource').value
-      };
+    // Guardar Película y forzar volver a la Página 1
+document.getElementById('movieForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const title = document.getElementById('movieTitle').value;
+    const source = document.getElementById('movieSource').value;
+    const desc = document.getElementById('movieDesc').value;
+    const poster = document.getElementById('moviePosterUrl').value;
+    const isFeatured = document.getElementById('movieFeatured').checked;
 
-      const episodesRef = window.dbRef(window.db, `catalog/series/${seriesKey}/episodes`);
-      window.dbPush(episodesRef, episodeData);
-      closePanel('episodeSecretPanel');
-    });
+    // Guardar en Firebase
+    const newRef = window.dbPush(window.dbRef(window.db, 'catalog/movies'));
+    window.dbRef(window.db, 'catalog/movies/' + newRef.key);
+    
+    // --- ESTA ES LA LÍNEA CLAVE ---
+    currentPageMovies = 1; // Fuerza a la web a mostrar la página 1 inmediatamente
+
+    if (isFeatured) {
+        window.dbPush(window.dbRef(window.db, 'catalog/featured'), { title, source, desc, poster });
+    }
+
+    closePanel('moviesSecretPanel');
+    e.target.reset();
+});
+
+// Guardar Serie y forzar volver a la Página 1
+document.getElementById('seriesForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById('seriesTitle').value;
+    const desc = document.getElementById('seriesDesc').value;
+    const poster = document.getElementById('seriesPosterUrl').value;
+    const isFeatured = document.getElementById('seriesFeatured').checked;
+
+    // Guardar en Firebase
+    window.dbPush(window.dbRef(window.db, 'catalog/series'), { title, desc, poster });
+
+    // --- ESTA ES LA LÍNEA CLAVE ---
+    currentPageSeries = 1; // Fuerza a la web a mostrar la página 1 inmediatamente
+
+    if (isFeatured) {
+        window.dbPush(window.dbRef(window.db, 'catalog/featured'), { title, desc, poster });
+    }
+
+    closePanel('seriesSecretPanel');
+    e.target.reset();
+});
 
     function saveToFirebase(type, data) {
       const sectionRef = window.dbRef(window.db, `catalog/${type}`);
