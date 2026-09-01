@@ -1158,69 +1158,65 @@ function renderPagination(type, totalItems) {
 }
 
 function goToPage(type, page) {
-
-    const totalItems =
-        Object.keys(catalog[type] || {}).length;
-
-    const totalPages =
-        Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const items = catalog[type] || {};
+    const totalItems = Object.keys(items).length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
     if (page < 1 || page > totalPages) return;
 
     if (type === 'movies') {
         currentPageMovies = page;
-    } else {
+        renderMedia('movies');
+    } else if (type === 'series') {
         currentPageSeries = page;
+        renderMedia('series');
     }
-
-    renderMedia(type);
 }
-      
-    function renderMedia(type) {
-      const isMovie = type === 'movies';
-      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
-      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
-      const items = catalog[type] || {};
-      const keys = Object.keys(items);
-        const currentPage =
-    type === 'movies'
-        ? currentPageMovies
-        : currentPageSeries;
 
-const start =
-    (currentPage - 1) * ITEMS_PER_PAGE;
+function renderMedia(type) {
+    const container = document.getElementById(type === 'movies' ? 'moviesContainer' : 'seriesContainer');
+    const emptyMsg = document.getElementById(type === 'movies' ? 'noMoviesMsg' : 'noSeriesMsg');
+    const items = catalog[type] || {};
+    const keys = Object.keys(items);
 
-const pageKeys =
-    keys.slice(start, start + ITEMS_PER_PAGE);
+    if (!container) return;
 
-      container.innerHTML = '';
-      if (keys.length === 0) {
-        emptyMsg.style.display = 'block';
-      } else {
-        emptyMsg.style.display = 'none';
-       pageKeys.forEach(key => {
-          const item = items[key];
-          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
-          const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
-           renderPagination(type, keys.length);
+    // 1. Vacía la pantalla para evitar que las películas se amontonen o dupliquen
+    container.innerHTML = '';
 
-          container.innerHTML += `
-            <div class="movie-card">
-              <div onclick="openInfoModal('${type}', '${key}')">
-                ${posterHTML}
-                <div class="card-info">
-                  <div class="card-title">${item.title}</div>
-                </div>
-              </div>
-              <div class="edit-controls">
-                ${extraBtn}
-                <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
-              </div>
-            </div>
-          `;
-        });
-      }
+    if (keys.length === 0) {
+        if (emptyMsg) emptyMsg.style.display = 'block';
+        renderPagination(type, 0);
+        return;
     }
+
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    // 2. Filtra exactamente cuáles 12 películas mostrar en la página actual
+    const currentPage = type === 'movies' ? currentPageMovies : currentPageSeries;
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedKeys = keys.slice(startIndex, endIndex);
+
+    // 3. Dibuja solo el grupo de la página seleccionada
+    paginatedKeys.forEach(key => {
+        const item = items[key];
+        container.innerHTML += `
+            <div class="movie-card" onclick="openInfoModal('${type}', '${key}')">
+                <img src="${item.poster}" class="poster-img" alt="${item.title}">
+                <div class="card-info">
+                    <div class="card-title">${item.title}</div>
+                </div>
+                <div class="edit-controls">
+                    <button class="btn-danger" onclick="event.stopPropagation(); deleteMediaItem('${type}', '${key}')">Eliminar</button>
+                </div>
+            </div>
+        `;
+    });
+
+    // 4. Actualiza la barra numerada (1, 2, >)
+    renderPagination(type, keys.length);
+}
 
     function openInfoModal(type, key) {
       const item = catalog[type]?.[key];
