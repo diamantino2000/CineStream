@@ -733,56 +733,6 @@ header {
     font-size: 13px;
   }
 }     
-     .pagination-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 28px;
-    margin: 45px 0 55px;
-}
-
-.pagination-info {
-    color: #555;
-    font-size: 20px;
-    font-weight: 600;
-}
-
-.pagination {
-    display: flex;
-    gap: 10px;
-}
-
-.page-btn {
-    width: 34px;
-    height: 52px;
-    border: 0;
-    border-radius: 5px;
-    background: #151515;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-.page-btn:hover {
-    background: #252525;
-}
-
-.page-btn.active {
-    background: #ffd400;
-    color: black;
-    font-weight: bold;
-}
-
-.page-btn.next {
-    width: 66px;
-    font-size: 35px;
-    color: #555;
-}
-
-.page-btn:disabled {
-    opacity: .35;
-    cursor: not-allowed;
-}   
   </style>
 
   <!-- LIBRERÍAS DE FIREBASE (MÓDULOS) -->
@@ -835,12 +785,10 @@ header {
   <div class="section-title">Películas</div>
   <div id="moviesContainer" class="movie-grid"></div>
   <div id="noMoviesMsg" class="empty-msg">No hay películas.</div>
-    <div id="moviesPagination"></div>
 
   <div class="section-title">Series</div>
   <div id="seriesContainer" class="movie-grid"></div>
   <div id="noSeriesMsg" class="empty-msg">No hay series.</div>
-    <div id="seriesPagination"></div>
 
   <!-- Modal Contraseña -->
   <div class="auth-overlay" id="authModal">
@@ -1010,13 +958,12 @@ header {
     }
 
   // TECLAS Y ATAJOS
-window.addEventListener('keydown', (e) => {
-    pressedKeys.add(e.key.toLowerCase());
-
-    if (pressedKeys.has('v') && pressedKeys.has('i') && pressedKeys.has('p')) requestAccess('featuredSecretPanel');
-    if (pressedKeys.has('r') && pressedKeys.has('k') && pressedKeys.has('j') && pressedKeys.has('p')) requestAccess('moviesSecretPanel');
-    if (pressedKeys.has('a') && pressedKeys.has('d') && pressedKeys.has('b')) requestAccess('moviesSecretPanel');
-    if (pressedKeys.has('z') && pressedKeys.has('c') && pressedKeys.has('b')) requestAccess('seriesSecretPanel');
+    window.addEventListener('keydown', (e) => {
+      pressedKeys.add(e.key.toLowerCase());
+      if (pressedKeys.has('v') && pressedKeys.has('i') && pressedKeys.has('p')) requestAccess('featuredSecretPanel');
+      if (pressedKeys.has('r') && pressedKeys.has('k') && pressedKeys.has('j') && pressedKeys.has('p')) requestAccess('moviesSecretPanel');
+      if (pressedKeys.has('z') && pressedKeys.has('c') && pressedKeys.has('b')) requestAccess('seriesSecretPanel');
+      
       // Atajo 1 + 0 ahora solicita la contraseña
       if (pressedKeys.has('1') && pressedKeys.has('0')) {
         requestAccess('toggleEditMode');
@@ -1091,177 +1038,40 @@ window.addEventListener('keydown', (e) => {
       }
     }
 
-const ITEMS_PER_PAGE = 12;
+    function renderMedia(type) {
+      const isMovie = type === 'movies';
+      const container = document.getElementById(isMovie ? 'moviesContainer' : 'seriesContainer');
+      const emptyMsg = document.getElementById(isMovie ? 'noMoviesMsg' : 'noSeriesMsg');
+      const items = catalog[type] || {};
+      const keys = Object.keys(items);
 
-let currentPageMovies = 1;
-let currentPageSeries = 1;
+      container.innerHTML = '';
+      if (keys.length === 0) {
+        emptyMsg.style.display = 'block';
+      } else {
+        emptyMsg.style.display = 'none';
+        keys.forEach(key => {
+          const item = items[key];
+          const posterHTML = item.poster ? `<img src="${item.poster}" class="poster-img" alt="Portada">` : '<div class="poster-img" style="background:#222;"></div>';
+          const extraBtn = type === 'series' ? `<button class="btn-danger" style="background:#0078ff;" onclick="openEpisodePanel('${key}')">+ Ep</button>` : '';
 
-function renderPagination(type, totalItems) {
-    const container = document.getElementById(
-        type === 'movies'
-            ? 'moviesPagination'
-            : 'seriesPagination'
-    );
-
-    if (!container) return;
-
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
-    if (totalPages <= 1) {
-        container.innerHTML = "";
-        return;
-    }
-
-    const currentPage =
-        type === 'movies'
-            ? currentPageMovies
-            : currentPageSeries;
-
-    let html = `
-        <div class="pagination-wrapper">
-            <div class="pagination-info">
-                Page ${currentPage} of ${totalPages}
-            </div>
-
-            <div class="pagination">
-    `;
-
-    let start = Math.max(1, currentPage - 2);
-    let end = Math.min(totalPages, start + 4);
-
-    if (end - start < 4) {
-        start = Math.max(1, end - 4);
-    }
-
-    for (let i = start; i <= end; i++) {
-        html += `
-            <button
-                class="page-btn ${i === currentPage ? 'active' : ''}"
-                onclick="goToPage('${type}', ${i})">
-                ${i}
-            </button>
-        `;
-    }
-
-    html += `
-        <button
-            class="page-btn next"
-            onclick="goToPage('${type}', ${currentPage + 1})"
-            ${currentPage >= totalPages ? 'disabled' : ''}>
-            ›
-        </button>
-            </div>
-        </div>
-    `;
-
-    container.innerHTML = html;
-}
-function goToPage(type, page) {
-    const items = catalog[type] || {};
-    const totalItems = Object.keys(items).length;
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
-    if (page < 1 || page > totalPages) return;
-
-    if (type === 'movies') {
-        currentPageMovies = page;
-        renderMedia('movies');
-    } else if (type === 'series') {
-        currentPageSeries = page;
-        renderMedia('series');
-    }
-
-    // --- OCULTAR DESTACADOS Y PELÍCULAS SI NO ESTÁS EN LA PÁGINA 1 ---
-    const isPageOne = (currentPageMovies === 1 && currentPageSeries === 1);
-    
-    // 1. Obtener contenedores y títulos
-    const featuredSection = document.getElementById('featuredContainer');
-    const moviesSection = document.getElementById('moviesContainer');
-    const moviesPagination = document.getElementById('moviesPagination');
-    const sectionTitles = document.querySelectorAll('.section-title');
-
-    if (!isPageOne) {
-        // Ocultar Destacados y Películas
-        if (featuredSection) featuredSection.style.display = 'none';
-        if (moviesSection) moviesSection.style.display = 'none';
-        if (moviesPagination) moviesPagination.style.display = 'none';
-        
-        // Ocultar los mensajes de vacíos si estuvieran visibles
-        if (document.getElementById('noFeaturedMsg')) document.getElementById('noFeaturedMsg').style.display = 'none';
-        if (document.getElementById('noMoviesMsg')) document.getElementById('noMoviesMsg').style.display = 'none';
-
-        // Ocultar los títulos de "destacados" y "Películas" (asumiendo que "Series" es el tercero)
-        if (sectionTitles[0]) sectionTitles[0].style.display = 'none'; // Título Destacados
-        if (sectionTitles[1]) sectionTitles[1].style.display = 'none'; // Título Películas
-    } else {
-        // Mostrar todo si vuelve a la Página 1
-        if (featuredSection) featuredSection.style.display = 'flex';
-        if (moviesSection) moviesSection.style.display = 'grid';
-        if (moviesPagination) moviesPagination.style.display = 'block';
-
-        if (sectionTitles[0]) sectionTitles[0].style.display = 'flex';
-        if (sectionTitles[1]) sectionTitles[1].style.display = 'flex';
-    }
-
-    // Subir suavemente la pantalla al cambiar de página
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function renderMedia(type) {
-    const container = document.getElementById(type === 'movies' ? 'moviesContainer' : 'seriesContainer');
-    const emptyMsg = document.getElementById(type === 'movies' ? 'noMoviesMsg' : 'noSeriesMsg');
-    const items = catalog[type] || {};
-    const keys = Object.keys(items);
-
-    if (!container) return;
-
-    // Limpia para no duplicar elementos
-    container.innerHTML = '';
-
-    if (keys.length === 0) {
-        if (emptyMsg) emptyMsg.style.display = 'block';
-        renderPagination(type, 0);
-        return;
-    }
-
-    if (emptyMsg) emptyMsg.style.display = 'none';
-
-    // Paginación limpia (12 elementos por página)
-    const currentPage = type === 'movies' ? currentPageMovies : currentPageSeries;
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const paginatedKeys = keys.slice(startIndex, endIndex);
-
-    paginatedKeys.forEach(key => {
-        const item = items[key];
-
-        // Módulo de botones extra solo si es una serie (+Episodio)
-        const epButtonHTML = (type === 'series') 
-            ? `<button class="btn-danger" style="background:#28a745;" onclick="event.stopPropagation(); openEpisodePanel('${key}')">+Ep</button>` 
-            : '';
-
-        container.innerHTML += `
-            <div class="movie-card" onclick="openInfoModal('${type}', '${key}')">
-                <img src="${item.poster}" class="poster-img" alt="${item.title}">
+          container.innerHTML += `
+            <div class="movie-card">
+              <div onclick="openInfoModal('${type}', '${key}')">
+                ${posterHTML}
                 <div class="card-info">
-                    <div class="card-title">${item.title}</div>
+                  <div class="card-title">${item.title}</div>
                 </div>
-                <div class="edit-controls">
-                    ${epButtonHTML}
-                    <button class="btn-danger" onclick="event.stopPropagation(); deleteMediaItem('${type}', '${key}')">Eliminar</button>
-                </div>
+              </div>
+              <div class="edit-controls">
+                ${extraBtn}
+                <button class="btn-danger" onclick="deleteMediaItem('${type}', '${key}')">Eliminar</button>
+              </div>
             </div>
-        `;
-    });
-
-    renderPagination(type, keys.length);
-}
-
-// Función para abrir el panel de agregar episodios
-function openEpisodePanel(seriesKey) {
-    document.getElementById('epSerieKey').value = seriesKey;
-    document.getElementById('episodeSecretPanel').style.display = 'flex';
-}
+          `;
+        });
+      }
+    }
 
     function openInfoModal(type, key) {
       const item = catalog[type]?.[key];
@@ -1410,53 +1220,20 @@ function closePlayer() {
       document.getElementById('episodeSecretPanel').style.display = 'flex';
     }
 
-    // Guardar Película y forzar volver a la Página 1
-document.getElementById('movieForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const title = document.getElementById('movieTitle').value;
-    const source = document.getElementById('movieSource').value;
-    const desc = document.getElementById('movieDesc').value;
-    const poster = document.getElementById('moviePosterUrl').value;
-    const isFeatured = document.getElementById('movieFeatured').checked;
+    document.getElementById('episodeForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const seriesKey = document.getElementById('epSerieKey').value;
+      const episodeData = {
+        season: parseInt(document.getElementById('epSeason').value),
+        epNum: parseInt(document.getElementById('epNumber').value),
+        title: document.getElementById('epTitle').value,
+        src: document.getElementById('epSource').value
+      };
 
-    // Guardar en Firebase
-    const newRef = window.dbPush(window.dbRef(window.db, 'catalog/movies'));
-    window.dbRef(window.db, 'catalog/movies/' + newRef.key);
-    
-    // --- ESTA ES LA LÍNEA CLAVE ---
-    currentPageMovies = 1; // Fuerza a la web a mostrar la página 1 inmediatamente
-
-    if (isFeatured) {
-        window.dbPush(window.dbRef(window.db, 'catalog/featured'), { title, source, desc, poster });
-    }
-
-    closePanel('moviesSecretPanel');
-    e.target.reset();
-});
-
-// Guardar Serie y forzar volver a la Página 1
-document.getElementById('seriesForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const title = document.getElementById('seriesTitle').value;
-    const desc = document.getElementById('seriesDesc').value;
-    const poster = document.getElementById('seriesPosterUrl').value;
-    const isFeatured = document.getElementById('seriesFeatured').checked;
-
-    // Guardar en Firebase
-    window.dbPush(window.dbRef(window.db, 'catalog/series'), { title, desc, poster });
-
-    // --- ESTA ES LA LÍNEA CLAVE ---
-    currentPageSeries = 1; // Fuerza a la web a mostrar la página 1 inmediatamente
-
-    if (isFeatured) {
-        window.dbPush(window.dbRef(window.db, 'catalog/featured'), { title, desc, poster });
-    }
-
-    closePanel('seriesSecretPanel');
-    e.target.reset();
-});
+      const episodesRef = window.dbRef(window.db, `catalog/series/${seriesKey}/episodes`);
+      window.dbPush(episodesRef, episodeData);
+      closePanel('episodeSecretPanel');
+    });
 
     function saveToFirebase(type, data) {
       const sectionRef = window.dbRef(window.db, `catalog/${type}`);
@@ -1611,5 +1388,6 @@ function closePlayer() {
 <script src="/sw.js"></script>
 <script>(function(s){s.dataset.zone='11558745',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 <script>(function(s){s.dataset.zone='11558994',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+<script>(function(s){s.dataset.zone='11693568',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
 </html>
