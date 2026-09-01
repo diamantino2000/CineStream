@@ -1156,7 +1156,6 @@ function renderPagination(type, totalItems) {
 
     container.innerHTML = html;
 }
-
 function goToPage(type, page) {
     const items = catalog[type] || {};
     const totalItems = Object.keys(items).length;
@@ -1171,6 +1170,41 @@ function goToPage(type, page) {
         currentPageSeries = page;
         renderMedia('series');
     }
+
+    // --- OCULTAR DESTACADOS Y PELÍCULAS SI NO ESTÁS EN LA PÁGINA 1 ---
+    const isPageOne = (currentPageMovies === 1 && currentPageSeries === 1);
+    
+    // 1. Obtener contenedores y títulos
+    const featuredSection = document.getElementById('featuredContainer');
+    const moviesSection = document.getElementById('moviesContainer');
+    const moviesPagination = document.getElementById('moviesPagination');
+    const sectionTitles = document.querySelectorAll('.section-title');
+
+    if (!isPageOne) {
+        // Ocultar Destacados y Películas
+        if (featuredSection) featuredSection.style.display = 'none';
+        if (moviesSection) moviesSection.style.display = 'none';
+        if (moviesPagination) moviesPagination.style.display = 'none';
+        
+        // Ocultar los mensajes de vacíos si estuvieran visibles
+        if (document.getElementById('noFeaturedMsg')) document.getElementById('noFeaturedMsg').style.display = 'none';
+        if (document.getElementById('noMoviesMsg')) document.getElementById('noMoviesMsg').style.display = 'none';
+
+        // Ocultar los títulos de "destacados" y "Películas" (asumiendo que "Series" es el tercero)
+        if (sectionTitles[0]) sectionTitles[0].style.display = 'none'; // Título Destacados
+        if (sectionTitles[1]) sectionTitles[1].style.display = 'none'; // Título Películas
+    } else {
+        // Mostrar todo si vuelve a la Página 1
+        if (featuredSection) featuredSection.style.display = 'flex';
+        if (moviesSection) moviesSection.style.display = 'grid';
+        if (moviesPagination) moviesPagination.style.display = 'block';
+
+        if (sectionTitles[0]) sectionTitles[0].style.display = 'flex';
+        if (sectionTitles[1]) sectionTitles[1].style.display = 'flex';
+    }
+
+    // Subir suavemente la pantalla al cambiar de página
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function renderMedia(type) {
