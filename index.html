@@ -1151,7 +1151,10 @@ header {
       });
     }
 
-   // RENDER Y ROTACIÓN INFINITA 3D
+// Variable global requerida (ponla junto a pressedKeys, isEditMode, etc.)
+let currentFeaturedIndex = 0;
+
+// RENDER Y ROTACIÓN INFINITA 3D
 function renderFeatured() {
   const container = document.getElementById('featuredContainer');
   const dotsContainer = document.getElementById('carouselDots');
@@ -1159,9 +1162,15 @@ function renderFeatured() {
   const items = catalog.featured || {};
   const keys = Object.keys(items);
 
+  if (!container || !dotsContainer) return;
+
   container.innerHTML = '';
   dotsContainer.innerHTML = '';
-  if (window.autoRotateTimer) clearInterval(window.autoRotateTimer);
+  
+  if (window.autoRotateTimer) {
+    clearInterval(window.autoRotateTimer);
+    window.autoRotateTimer = null;
+  }
 
   if (keys.length === 0) {
     if (emptyMsg) emptyMsg.style.display = 'block';
@@ -1172,7 +1181,7 @@ function renderFeatured() {
 
   keys.forEach((key, index) => {
     const item = items[key];
-    const bgStyle = item.poster ? `background-image: url('${item.poster}');` : 'background:#222;';
+    const bgStyle = item.posterUrl || item.poster ? `background-image: url('${item.posterUrl || item.poster}');` : 'background:#222;';
     
     const card = document.createElement('div');
     card.className = 'hero-card-3d';
@@ -1182,15 +1191,14 @@ function renderFeatured() {
 
     card.innerHTML = `
       <div class="hero-overlay">
-        <div class="hero-title">${item.title}</div>
+        <div class="hero-title">${item.title || 'Sin título'}</div>
         <div class="hero-desc">${item.desc || 'Sin descripción'}</div>
         <div class="hero-actions">
-          <button class="btn-hero-play" onclick="event.stopPropagation(); openInfoModal('featured', '${key}')">▶ VER AHORA</button>
-          <button class="btn-hero-fav">+ MIS FAVORITOS</button>
+          <button class="btn-hero-play" onclick="event.stopPropagation(); openPlayer('${item.source}')">▶ VER AHORA</button>
         </div>
       </div>
       <div class="edit-controls" style="position:absolute; top:10px; right:10px; z-index:20;">
-        <button class="btn-danger" onclick="event.stopPropagation(); deleteMediaItem('featured', '${key}')">Eliminar</button>
+        <button class="btn-danger" onclick="event.stopPropagation(); deleteItem('featured', '${key}')">Eliminar</button>
       </div>
     `;
 
@@ -1202,14 +1210,19 @@ function renderFeatured() {
     dotsContainer.appendChild(dot);
   });
 
-  if (currentFeaturedIndex >= keys.length) currentFeaturedIndex = 0;
+  if (currentFeaturedIndex >= keys.length) {
+    currentFeaturedIndex = 0;
+  }
+
   updateFeaturedClasses(keys.length);
 
-  // Iniciar la rotación automática en bucle cada 4 segundos
-  window.autoRotateTimer = setInterval(() => {
-    currentFeaturedIndex = (currentFeaturedIndex + 1) % keys.length;
-    updateFeaturedClasses(keys.length);
-  }, 4000);
+  // Iniciar rotación automática solo si hay más de una tarjeta
+  if (keys.length > 1) {
+    window.autoRotateTimer = setInterval(() => {
+      currentFeaturedIndex = (currentFeaturedIndex + 1) % keys.length;
+      updateFeaturedClasses(keys.length);
+    }, 4000);
+  }
 }
 
 function setFeaturedSlide(index) {
@@ -1223,25 +1236,20 @@ function updateFeaturedClasses(total) {
   const cards = document.querySelectorAll('.hero-card-3d');
   const dots = document.querySelectorAll('.carousel-dot');
 
-  if (cards.length === 0) return;
+  if (!cards.length || total === 0) return;
 
   cards.forEach((card, i) => {
-    // Limpiamos todas las clases anteriores
     card.classList.remove('active', 'prev', 'next');
     if (dots[i]) dots[i].classList.remove('active');
 
-    // Calcular la posición relativa en el bucle
     const diff = (i - currentFeaturedIndex + total) % total;
 
     if (diff === 0) {
-      // Tarjeta Al Frente (Centro)
       card.classList.add('active');
       if (dots[i]) dots[i].classList.add('active');
     } else if (diff === 1) {
-      // Siguiente tarjeta (Pasa a la derecha)
       card.classList.add('next');
     } else if (diff === total - 1) {
-      // Tarjeta anterior (Pasa a la izquierda)
       card.classList.add('prev');
     }
   });
