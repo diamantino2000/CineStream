@@ -734,7 +734,21 @@ header {
   .ep-nav-title {
     font-size: 13px;
   }
-}     
+}   
+    const destacados = [
+  {
+    id: 1,
+    titulo: "Ejemplo Película",
+    tipo: "pelicula",
+    portada: "link-imagen-peli.jpg"
+  },
+  {
+    id: 2,
+    titulo: "Ejemplo Serie",
+    tipo: "serie",
+    portada: "link-imagen-serie.jpg"
+  }
+];
   </style>
 
   <!-- LIBRERÍAS DE FIREBASE (MÓDULOS) -->
@@ -785,6 +799,12 @@ header {
   <div class="section-title">destacados</div>
   <div id="featuredContainer" class="hero-slider-container"></div>
   <div id="noFeaturedMsg" class="empty-msg">No hay contenido destacado actualmente.</div>
+    <label for="tipoDestacado">Selecciona tipo:</label>
+<select id="tipoDestacado">
+  <option value="">-- Elige una opción --</option>
+  <option value="pelicula">Película</option>
+  <option value="serie">Serie</option>
+</select>
 
   <div class="section-title">Películas</div>
   <div id="moviesContainer" class="movie-grid"></div>
@@ -1376,6 +1396,36 @@ function closePlayer() {
   modal.style.display = 'none';
   navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
   currentEpisodeIndex = -1;
+}
+      function agregarADestacados() {
+  // 1. Pregunta el tipo de contenido antes de realizar cualquier acción
+  let tipo = prompt("¿Qué deseas agregar a destacados? Escribe 'pelicula' o 'serie':");
+
+  if (!tipo) {
+    alert("Operación cancelada.");
+    return;
+  }
+
+  tipo = tipo.trim().toLowerCase();
+
+  // 2. Evalúa la respuesta
+  if (tipo === "pelicula" || tipo === "peli") {
+    let tituloPeli = prompt("Introduce el nombre o ID de la película:");
+    if (tituloPeli) {
+      // Aquí va tu lógica para guardar la película destacada
+      console.log("Película destacada guardada:", tituloPeli);
+      alert(`La película "${tituloPeli}" se ha añadido a destacados.`);
+    }
+  } else if (tipo === "serie") {
+    let tituloSerie = prompt("Introduce el nombre o ID de la serie:");
+    if (tituloSerie) {
+      // Aquí va tu lógica para guardar la serie destacada
+      console.log("Serie destacada guardada:", tituloSerie);
+      alert(`La serie "${tituloSerie}" se ha añadido a destacados.`);
+    }
+  } else {
+    alert("Opción no válida. Debes escribir 'pelicula' o 'serie'.");
+  }
 }
 </script>
   </script>
