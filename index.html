@@ -1194,7 +1194,7 @@ function renderFeatured() {
         <div class="hero-title">${item.title || 'Sin título'}</div>
         <div class="hero-desc">${item.desc || 'Sin descripción'}</div>
         <div class="hero-actions">
-          <button class="btn-hero-play" onclick="event.stopPropagation(); openPlayer('${item.source}')">▶ VER AHORA</button>
+         <button class="btn-hero-play" onclick="event.stopPropagation(); openInfoModal('featured', '${key}')">▶ VER AHORA</button>
         </div>
       </div>
       <div class="edit-controls" style="position:absolute; top:10px; right:10px; z-index:20;">
