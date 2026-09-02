@@ -12,8 +12,6 @@
     <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png">
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9128360935535190"
-     crossorigin="anonymous"></script>
 </head>
     
 
@@ -734,21 +732,7 @@ header {
   .ep-nav-title {
     font-size: 13px;
   }
-}   
-    const destacados = [
-  {
-    id: 1,
-    titulo: "Ejemplo Película",
-    tipo: "pelicula",
-    portada: "link-imagen-peli.jpg"
-  },
-  {
-    id: 2,
-    titulo: "Ejemplo Serie",
-    tipo: "serie",
-    portada: "link-imagen-serie.jpg"
-  }
-];
+}     
   </style>
 
   <!-- LIBRERÍAS DE FIREBASE (MÓDULOS) -->
@@ -780,8 +764,6 @@ header {
 </script>
 <link rel="shortcut icon" href="/static/img/logo.png" type="image/x-icon">
 <link rel="icon" href="/static/img/logo.png" type="image/png">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9128360935535190"
-     crossorigin="anonymous"></script>
 </head>
 <body>
   <header>
@@ -796,28 +778,9 @@ header {
 
   <h1 class="main-title">Catálogo de Entretenimiento</h1>
 
-  <!-- Panel Secreto Destacados corregido -->
-<div class="secret-panel" id="featuredSecretPanel">
-  <div class="panel-box">
-    <h3>Agregar a Destacados</h3>
-    <form id="featuredForm">
-      <div class="form-group">
-        <label>Tipo de Contenido:</label>
-        <select id="featuredType" required style="width:100%; padding:10px; border-radius:6px; background:#2b2b2b; color:#fff; border:1px solid #333;">
-          <option value="pelicula">Película</option>
-          <option value="serie">Serie</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Título:</label><input type="text" id="featuredTitle" required></div>
-      <div class="form-group"><label>Enlace de Video (.mp4 / iframe):</label><input type="text" id="featuredSource" required></div>
-      <div class="form-group"><label>Sinopsis:</label><textarea id="featuredDesc" rows="3"></textarea></div>
-      <div class="form-group"><label>Imagen Portada (URL):</label><input type="text" id="featuredPosterUrl" required></div>
-      <button type="submit" class="btn-red">Guardar Destacado</button>
-      <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('featuredSecretPanel')">Cerrar</button>
-    </form>
-  </div>
-</div>
-    
+  <div class="section-title">destacados</div>
+  <div id="featuredContainer" class="hero-slider-container"></div>
+  <div id="noFeaturedMsg" class="empty-msg">No hay contenido destacado actualmente.</div>
 
   <div class="section-title">Películas</div>
   <div id="moviesContainer" class="movie-grid"></div>
@@ -1409,36 +1372,6 @@ function closePlayer() {
   modal.style.display = 'none';
   navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
   currentEpisodeIndex = -1;
-}
-      function agregarADestacados() {
-  // 1. Pregunta el tipo de contenido antes de realizar cualquier acción
-  let tipo = prompt("¿Qué deseas agregar a destacados? Escribe 'pelicula' o 'serie':");
-
-  if (!tipo) {
-    alert("Operación cancelada.");
-    return;
-  }
-
-  tipo = tipo.trim().toLowerCase();
-
-  // 2. Evalúa la respuesta
-  if (tipo === "pelicula" || tipo === "peli") {
-    let tituloPeli = prompt("Introduce el nombre o ID de la película:");
-    if (tituloPeli) {
-      // Aquí va tu lógica para guardar la película destacada
-      console.log("Película destacada guardada:", tituloPeli);
-      alert(`La película "${tituloPeli}" se ha añadido a destacados.`);
-    }
-  } else if (tipo === "serie") {
-    let tituloSerie = prompt("Introduce el nombre o ID de la serie:");
-    if (tituloSerie) {
-      // Aquí va tu lógica para guardar la serie destacada
-      console.log("Serie destacada guardada:", tituloSerie);
-      alert(`La serie "${tituloSerie}" se ha añadido a destacados.`);
-    }
-  } else {
-    alert("Opción no válida. Debes escribir 'pelicula' o 'serie'.");
-  }
 }
 </script>
   </script>
