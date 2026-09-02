@@ -796,15 +796,28 @@ header {
 
   <h1 class="main-title">Catálogo de Entretenimiento</h1>
 
-  <div class="section-title">destacados</div>
-  <div id="featuredContainer" class="hero-slider-container"></div>
-  <div id="noFeaturedMsg" class="empty-msg">No hay contenido destacado actualmente.</div>
-    <label for="tipoDestacado">Selecciona tipo:</label>
-<select id="tipoDestacado">
-  <option value="">-- Elige una opción --</option>
-  <option value="pelicula">Película</option>
-  <option value="serie">Serie</option>
-</select>
+  <!-- Panel Secreto Destacados corregido -->
+<div class="secret-panel" id="featuredSecretPanel">
+  <div class="panel-box">
+    <h3>Agregar a Destacados</h3>
+    <form id="featuredForm">
+      <div class="form-group">
+        <label>Tipo de Contenido:</label>
+        <select id="featuredType" required style="width:100%; padding:10px; border-radius:6px; background:#2b2b2b; color:#fff; border:1px solid #333;">
+          <option value="pelicula">Película</option>
+          <option value="serie">Serie</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Título:</label><input type="text" id="featuredTitle" required></div>
+      <div class="form-group"><label>Enlace de Video (.mp4 / iframe):</label><input type="text" id="featuredSource" required></div>
+      <div class="form-group"><label>Sinopsis:</label><textarea id="featuredDesc" rows="3"></textarea></div>
+      <div class="form-group"><label>Imagen Portada (URL):</label><input type="text" id="featuredPosterUrl" required></div>
+      <button type="submit" class="btn-red">Guardar Destacado</button>
+      <button type="button" style="background:none; border:none; color:#aaa; width:100%; margin-top:10px; cursor:pointer;" onclick="closePanel('featuredSecretPanel')">Cerrar</button>
+    </form>
+  </div>
+</div>
+    
 
   <div class="section-title">Películas</div>
   <div id="moviesContainer" class="movie-grid"></div>
