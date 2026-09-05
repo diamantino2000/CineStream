@@ -2,7 +2,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="MI_Hq14iBWIEFl1lyAjPv81ga14D-JDykYDLoLaC3g" />
-    <meta name="6a97888e-site-verification" content="2014b85abd561e463dc603a2a90cc812">
     
     <title>CnStream - Películas y Series Online</title>
     <meta name="description" content="Disfruta de las mejores películas y series en CnStream. Tu plataforma de entretenimiento online en alta calidad.">
@@ -20,9 +19,6 @@
    });
 </script>
 
-<!-- Cargar Fluid Player para publicidad VAST -->
-    <link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css" type="text/css" />
-    <script src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 </head>
     
 
@@ -1044,19 +1040,27 @@ header {
     </div>
   </div>
 
+  <!-- Reproductor Modal -->
+  <!-- Reproductor Modal -->
+<!-- Reproductor Modal -->
+<!-- Reproductor Modal -->
+<!-- Reproductor Modal -->
 <!-- Reproductor Modal -->
 <div class="player-overlay" id="playerModal">
   <div class="player-container">
     <button class="close-btn player-close-btn" onclick="closePlayer()">&times;</button>
     
+    <video id="localVideoPlayer" controls autoplay style="display: none;"></video>
+    
     <div id="playerContainer" style="position: relative; width: 100%; height: 520px;">
-      <!-- Reproductor Fluid Player con anuncio VAST activado -->
-      <video id="localVideoPlayer" controls style="width: 100%; height: 100%;">
-        <source id="videoSource" src="" type="video/mp4" />
-      </video>
-
-      <!-- Iframe alternativo para enlaces incrustados de terceros -->
       <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none; width: 100%; height: 100%; border: none;"></iframe>
+
+      <!-- CAPA TRANSPARENTE DE POPUNDER -->
+      <div id="popunderOverlay" onclick="ejecutarPopunder()" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; cursor: pointer; justify-content: center; align-items: center; background: rgba(0,0,0,0.3);">
+        <div style="width: 80px; height: 80px; background: rgba(229, 9, 20, 0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center;">
+          <div style="width: 0; height: 0; border-top: 15px solid transparent; border-bottom: 15px solid transparent; border-left: 25px solid white; margin-left: 5px;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- CONTROLES DE NAVEGACIÓN ENTRE EPISODIOS -->
@@ -1067,7 +1071,11 @@ header {
     </div>
   </div>
 </div>
-    
+
+</div>
+    <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none;"></iframe>
+  </div>
+</div>
   <script>
     const pressedKeys = new Set();
     let isEditMode = false;
@@ -1588,54 +1596,6 @@ function closePlayer() {
   modal.style.display = 'none';
   navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
   currentEpisodeIndex = -1;
-}
-      let fluidPlayerInstance = null;
-
-function loadVideoWithVAST(videoUrl) {
-  const videoElement = document.getElementById('localVideoPlayer');
-  const videoSource = document.getElementById('videoSource');
-  const iframeElement = document.getElementById('iframeVideoPlayer');
-
-  // Si es un archivo de video directo (.mp4)
-  if (videoUrl.includes('.mp4')) {
-    iframeElement.style.display = 'none';
-    videoElement.style.display = 'block';
-    videoSource.src = videoUrl;
-    videoElement.load();
-
-    // Destruir instancia previa si existía
-    if (fluidPlayerInstance) {
-      fluidPlayerInstance.destroy();
-    }
-
-    // Inicializar Fluid Player con tu enlace VAST de ExoClick
-    fluidPlayerInstance = fluidPlayer('localVideoPlayer', {
-      vastOptions: {
-        adList: [
-          {
-            roll: 'preRoll', // Se ejecuta antes de iniciar la película/serie
-            vastTag: 'https://s.magsrv.com/v1/vast.php?idz=6020868&ex-av=name'
-          }
-        ]
-      }
-    });
-  } else {
-    // Si no es mp4 (es un enlace embed/iframe), se utiliza el iframe estándar
-    videoElement.style.display = 'none';
-    iframeElement.style.display = 'block';
-    iframeElement.src = videoUrl;
-  }
-}
-
-function closePlayer() {
-  document.getElementById('playerModal').style.display = 'none';
-  const iframeElement = document.getElementById('iframeVideoPlayer');
-  if (iframeElement) iframeElement.src = '';
-  
-  if (fluidPlayerInstance) {
-    fluidPlayerInstance.destroy();
-    fluidPlayerInstance = null;
-  }
 }
 </script>
   </script>
