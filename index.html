@@ -18,6 +18,15 @@
        zoneId: '21otw8xwvx',
    });
 </script>
+    <!-- Estilos y Scripts de Video.js y el Plugin VAST/IMA -->
+<link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.6.5/videojs-contrib-ads.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.11.0/videojs.ima.css" />
+
+<script src="//imasdk.googleapis.com/js/sdk/v3/google_ima.js"></script>
+<script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.6.5/videojs-contrib-ads.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.11.0/videojs.ima.js"></script>
 
 </head>
     
@@ -1050,7 +1059,7 @@ header {
   <div class="player-container">
     <button class="close-btn player-close-btn" onclick="closePlayer()">&times;</button>
     
-    <video id="localVideoPlayer" controls autoplay style="display: none;"></video>
+    <video id="localVideoPlayer" class="video-js vjs-default-skin" controls autoplay style="display: none; width: 100%; height: 520px;"></video>
     
     <div id="playerContainer" style="position: relative; width: 100%; height: 520px;">
       <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none; width: 100%; height: 100%; border: none;"></iframe>
@@ -1597,6 +1606,17 @@ function closePlayer() {
   navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
   currentEpisodeIndex = -1;
 }
+      
+// Inicializar Video.js con el anuncio VAST cuando se cargue el video
+let player = videojs('localVideoPlayer');
+
+player.ima({
+  adTagUrl: 'https://youradexchange.com/video/select.php?r=12108782'
+});
+
+// Inicializar anuncio al reproducir
+player.ima.initializeAdDisplayContainer();
+
 </script>
   </script>
   <script>
