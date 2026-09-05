@@ -1607,16 +1607,222 @@ function closePlayer() {
   currentEpisodeIndex = -1;
 }
       
-// Inicializar Video.js con el anuncio VAST cuando se cargue el video
-let player = videojs('localVideoPlayer');
+<script>
+  const pressedKeys = new Set();
+  let isEditMode = false;
+  let pendingPanelTarget = null;
+  const SECRET_KEY = "Barcelona10";
+  
+  // Almacenes de Firebase
+  let catalog = { featured: {}, movies: {}, series: {} };
 
-player.ima({
-  adTagUrl: 'https://youradexchange.com/video/select.php?r=12108782'
-});
+  // Inicialización de VideoJS con Plugin VAST (IMA)
+  let player = null;
+  document.addEventListener('DOMContentLoaded', () => {
+    player = videojs('localVideoPlayer');
+    player.ima({
+      adTagUrl: 'https://youradexchange.com/video/select.php?r=12108782'
+    });
+  });
 
-// Inicializar anuncio al reproducir
-player.ima.initializeAdDisplayContainer();
+  window.addEventListener('load', () => {
+    const checkFirebase = setInterval(() => {
+      if (window.db) {
+        clearInterval(checkFirebase);
+        listenToFirebase();
+      }
+    }, 100);
+  });
 
+  function listenToFirebase() {
+    window.dbOnValue(window.dbRef(window.db, 'catalog'), (snapshot) => {
+      const data = snapshot.val() || { featured: {}, movies: {}, series: {} };
+      catalog = data;
+      renderFeatured();
+      renderMedia('movies');
+      renderMedia('series');
+    });
+  }
+
+  // LÓGICA DE REPRODUCCIÓN (LOCAL vs IFRAME) Y ANUNCIOS
+  function playVideo(sourceUrl) {
+    const localPlayerEl = document.getElementById('localVideoPlayer');
+    const iframePlayerEl = document.getElementById('iframeVideoPlayer');
+    const popunderOverlay = document.getElementById('popunderOverlay');
+
+    document.getElementById('playerModal').style.display = 'flex';
+
+    // Determinar si es video directo (.mp4) o iframe externo
+    if (sourceUrl.includes('.mp4')) {
+      iframePlayerEl.style.display = 'none';
+      popunderOverlay.style.display = 'none';
+      localPlayerEl.style.display = 'block';
+
+      // Cargar fuente en Video.js y reproducir
+      player.src({ type: 'video/mp4', src: sourceUrl });
+      player.ima.initializeAdDisplayContainer();
+      player.ima.requestAds();
+      player.play();
+    } else {
+      // Manejo de Embeds / iFrames
+      localPlayerEl.style.display = 'none';
+      player.pause();
+
+      iframePlayerEl.src = sourceUrl;
+      iframePlayerEl.style.display = 'block';
+      
+      // Mostrar capa de bloqueo inicial para forzar la primera interacción con anuncio
+      popunderOverlay.style.display = 'flex';
+    }
+  }
+
+  function ejecutarPopunder() {
+    // Ejecutar el script publicitario (AutoTag)
+    if (window.aclib && typeof window.aclib.runAutoTag === 'function') {
+      window.aclib.runAutoTag({ zoneId: '21otw8xwvx' });
+    }
+    // Ocultar la capa para permitir interacción completa con el iframe
+    document.getElementById('popunderOverlay').style.display = 'none';
+  }
+
+  function closePlayer() {
+    document.getElementById('playerModal').style.display = 'none';
+    const iframePlayerEl = document.getElementById('iframeVideoPlayer');
+    iframePlayerEl.src = '';
+    if (player) {
+      player.pause();
+    }
+  }
+
+  // TECLAS Y ATAJOS DE ADMINISTRADOR
+  window.addEventListener('keydown', (e) => {
+    pressedKeys.add(e.key.toLowerCase());
+    if (pressedKeys.has('v') && pressedKeys.has('i') && pressedKeys.has('p')) requestAccess('featuredSecretPanel');
+    if (pressedKeys.has('r') && pressedKeys.has('k') && pressedKeys.has('j') && pressedKeys.has('p')) requestAccess('moviesSecretPanel');
+    if (pressedKeys.has('z') && pressedKeys.has('c') && pressedKeys.has('b')) requestAccess('seriesSecretPanel');
+    if (pressedKeys.has('1') && pressedKeys.has('0')) requestAccess('toggleEditMode');
+  });
+
+  window.addEventListener('keyup', (e) => pressedKeys.delete(e.key.toLowerCase()));
+
+  function requestAccess(target) {
+    pendingPanelTarget = target;
+    document.getElementById('authPassword').value = '';
+    document.getElementById('authError').style.display = 'none';
+    document.getElementById('authModal').style.display = 'flex';
+    document.getElementById('authPassword').focus();
+  }
+
+  function verifyPassword() {
+    if (document.getElementById('authPassword').value === SECRET_KEY) {
+      document.getElementById('authModal').style.display = 'none';
+      if (pendingPanelTarget === 'toggleEditMode') {
+        isEditMode = !isEditMode;
+        document.body.classList.toggle('edit-mode', isEditMode);
+        pendingPanelTarget = null;
+      } else if (pendingPanelTarget) {
+        document.getElementById(pendingPanelTarget).style.display = 'flex';
+        pendingPanelTarget = null;
+      }
+    } else {
+      document.getElementById('authError').style.display = 'block';
+    }
+  }
+
+  function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+  function closePanel(panelId) { document.getElementById(panelId).style.display = 'none'; }
+
+  function filterContent() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('.movie-card, .hero-card-3d').forEach(card => {
+      const title = card.querySelector('.card-title, .hero-title').innerText.toLowerCase();
+      card.style.display = title.includes(query) ? '' : 'none';
+    });
+  }
+
+  // RENDERIZADO Y CARRUSEL 3D
+  let currentFeaturedIndex = 0;
+
+  function renderFeatured() {
+    const container = document.getElementById('featuredContainer');
+    const dotsContainer = document.getElementById('carouselDots');
+    const items = Object.entries(catalog.featured || {});
+
+    container.innerHTML = '';
+    dotsContainer.innerHTML = '';
+
+    if (items.length === 0) {
+      document.getElementById('noFeaturedMsg').style.display = 'block';
+      return;
+    }
+    document.getElementById('noFeaturedMsg').style.display = 'none';
+
+    items.forEach(([key, item], index) => {
+      const card = document.createElement('div');
+      card.className = `hero-card-3d ${index === 0 ? 'active' : index === 1 ? 'next' : index === items.length - 1 ? 'prev' : ''}`;
+      card.style.backgroundImage = `url('${item.posterUrl}')`;
+      card.innerHTML = `
+        <div class="hero-overlay">
+          <div class="hero-title">${item.title}</div>
+          <div class="hero-desc">${item.desc || ''}</div>
+          <div class="hero-actions">
+            <button class="btn-hero-play" onclick="playVideo('${item.source}')">▶ Reproducir</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+
+      const dot = document.createElement('div');
+      dot.className = `carousel-dot ${index === 0 ? 'active' : ''}`;
+      dot.onclick = () => setFeaturedIndex(index);
+      dotsContainer.appendChild(dot);
+    });
+  }
+
+  function setFeaturedIndex(index) {
+    const cards = document.querySelectorAll('.hero-card-3d');
+    const dots = document.querySelectorAll('.carousel-dot');
+    if (!cards.length) return;
+
+    currentFeaturedIndex = index;
+    cards.forEach((card, i) => {
+      card.className = 'hero-card-3d';
+      if (i === currentFeaturedIndex) card.classList.add('active');
+      else if (i === (currentFeaturedIndex + 1) % cards.length) card.classList.add('next');
+      else if (i === (currentFeaturedIndex - 1 + cards.length) % cards.length) card.classList.add('prev');
+    });
+
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentFeaturedIndex);
+    });
+  }
+
+  function renderMedia(type) {
+    const container = document.getElementById(`${type}Container`);
+    const emptyMsg = document.getElementById(`no${type.charAt(0).toUpperCase() + type.slice(1)}Msg`);
+    const items = Object.entries(catalog[type] || {});
+
+    container.innerHTML = '';
+    if (items.length === 0) {
+      emptyMsg.style.display = 'block';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    items.forEach(([key, item]) => {
+      const card = document.createElement('div');
+      card.className = 'movie-card';
+      card.innerHTML = `
+        <img src="${item.posterUrl}" class="poster-img" alt="${item.title}">
+        <div class="card-info">
+          <div class="card-title">${item.title}</div>
+        </div>
+      `;
+      card.onclick = () => playVideo(item.source);
+      container.appendChild(card);
+    });
+  }
+</script>
 </script>
   </script>
   <script>
