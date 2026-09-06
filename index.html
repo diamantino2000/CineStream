@@ -18,7 +18,9 @@
        zoneId: '21otw8xwvx',
    });
 </script>
-
+<!-- Fluid Player CDN -->
+<link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css" type="text/css"/>
+<script src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 </head>
     
 
@@ -1050,7 +1052,9 @@ header {
   <div class="player-container">
     <button class="close-btn player-close-btn" onclick="closePlayer()">&times;</button>
     
-    <video id="localVideoPlayer" controls autoplay style="display: none;"></video>
+    <video id="localVideoPlayer" controls autoplay style="display: none;">
+    <source src="" type="video/mp4" />
+</video>
     
     <div id="playerContainer" style="position: relative; width: 100%; height: 520px;">
       <iframe id="iframeVideoPlayer" src="" allowfullscreen referrerpolicy="no-referrer" style="display: none; width: 100%; height: 100%; border: none;"></iframe>
@@ -1597,6 +1601,38 @@ function closePlayer() {
   navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
   currentEpisodeIndex = -1;
 }
+   let fpPlayer = null;
+
+function reproducirPelicula(urlVideoMP4) {
+    const videoElement = document.getElementById('localVideoPlayer');
+    const videoSource = document.getElementById('videoSource');
+
+    // 1. Asignar la URL del video MP4 al reproductor
+    videoSource.src = urlVideoMP4;
+    videoElement.style.display = 'block';
+    videoElement.load();
+
+    // 2. Destruir la instancia previa del reproductor si ya existía
+    if (fpPlayer) {
+        fpPlayer.destroy();
+    }
+
+    // 3. Inicializar Fluid Player cargando el anuncio VAST antes del video
+    fpPlayer = fluidPlayer('localVideoPlayer', {
+        layoutControls: {
+            fillToContainer: true,
+            autoPlay: true
+        },
+        vastOptions: {
+            adList: [
+                {
+                    roll: 'preRoll', // Se ejecuta antes de iniciar el video
+                    vastTag: 'https://youradexchange.com/video/select.php?r=12108782' // Tu enlace VAST
+                }
+            ]
+        }
+    });
+}   
 </script>
   </script>
   <script>
