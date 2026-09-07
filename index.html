@@ -1298,6 +1298,16 @@ function updateFeaturedClasses(total) {
 function openInfoModal(type, key) {
   const item = catalog[type]?.[key];
   if (!item) return;
+      // Crear URL individual y recargar
+  if (type === 'movies') {
+    window.location.href = window.location.pathname + '?pelicula=' + encodeURIComponent(key);
+    return;
+  }
+
+  if (type === 'series') {
+    window.location.href = window.location.pathname + '?serie=' + encodeURIComponent(key);
+    return;
+  }
 
   // Cambiar URL y recargar la página
   if (type === 'movies') {
