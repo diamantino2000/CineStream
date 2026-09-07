@@ -1103,8 +1103,81 @@ header {
         renderFeatured();
         renderMedia('movies');
         renderMedia('series');
+        abrirContenidoDesdeURL();  
       });
     }
+      function abrirContenidoDesdeURL() {
+  const params = new URLSearchParams(window.location.search);
+
+  const peliculaKey = params.get('pelicula');
+  const serieKey = params.get('serie');
+
+  // Si la URL contiene ?pelicula=...
+  if (peliculaKey && catalog.movies && catalog.movies[peliculaKey]) {
+    abrirPeliculaDesdeURL(peliculaKey);
+    return;
+  }
+
+  // Si la URL contiene ?serie=...
+  if (serieKey && catalog.series && catalog.series[serieKey]) {
+    abrirSerieDesdeURL(serieKey);
+    return;
+  }
+}
+   function abrirSerieDesdeURL(key) {
+  const item = catalog.series[key];
+  if (!item) return;
+
+  document.getElementById('infoTitle').innerText = item.title;
+  document.getElementById('infoDesc').innerText =
+    item.desc && item.desc.trim() !== ''
+      ? item.desc
+      : "Sin descripción disponible.";
+
+  document.getElementById('infoBadge').innerText = 'Serie';
+
+  document.getElementById('infoHero').style.backgroundImage =
+    item.poster ? `url('${item.poster}')` : 'none';
+
+  const playBtn = document.getElementById('infoPlayBtn');
+  const epContainer = document.getElementById('episodesListContainer');
+
+  playBtn.style.display = 'none';
+  epContainer.style.display = 'block';
+
+  const rawEpisodes = item.episodes
+    ? Object.values(item.episodes)
+    : [];
+
+  currentSeriesEpisodes = rawEpisodes.sort(
+    (a, b) => a.season - b.season || a.epNum - b.epNum
+  );
+
+  let epsHtml =
+    '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3>' +
+    '<div class="episodes-list">';
+
+  if (currentSeriesEpisodes.length === 0) {
+    epsHtml +=
+      '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
+  } else {
+    currentSeriesEpisodes.forEach((ep, index) => {
+      epsHtml += `
+        <div class="ep-item" onclick="closeInfoModal(); playEpisodeByIndex(${index})">
+          <div>
+            T${ep.season} - E${ep.epNum} :
+            ${ep.title || 'Episodio ' + ep.epNum}
+          </div>
+          <span>▶ Ver</span>
+        </div>
+      `;
+    });
+  }
+
+  epContainer.innerHTML = epsHtml + '</div>';
+
+  document.getElementById('infoModal').style.display = 'flex';
+}   
   // TECLAS Y ATAJOS
     window.addEventListener('keydown', (e) => {
       pressedKeys.add(e.key.toLowerCase());
