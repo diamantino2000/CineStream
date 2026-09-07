@@ -13,7 +13,6 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
     <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vast-player@0.2/dist/vast-player.min.js"></script>
     <script type="text/javascript">
    aclib.runAutoTag({
        zoneId: '21otw8xwvx',
@@ -22,6 +21,7 @@
 <!-- Fluid Player CDN -->
 <link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css" type="text/css"/>
 <script src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vast-player@0.2/dist/vast-player.min.js"></script>
 </head>
     
 
@@ -1052,11 +1052,9 @@ header {
 <div class="player-overlay" id="playerModal">
   <div class="player-container">
     <button class="close-btn player-close-btn" onclick="closePlayer()">&times;</button>
-
-      <div id="vastAdContainer"
-     style="display:none; width:100%; height:520px; background:#000;">
-</div>
-    <video id="localVideoPlayer" controls autoplay style="display: none;">
+    
+    <div id="vastAdContainer" style="display:none; width:100%; height:520px; background:#000; position:relative;"></div>
+    <video id="localVideoPlayer" controls autoplay playsinline style="display: none;">
     <source src="" type="video/mp4" />
 </video>
     
@@ -1081,15 +1079,10 @@ header {
 </div>
 
 </div>
-    <iframe id="iframeVideoPlayer"
-        src=""
-        allowfullscreen
-        referrerpolicy="no-referrer"
-        style="display:none; width:100%; height:100%; border:none;">
-</iframe>
   </div>
 </div>
   <script>
+    const VAST_URL = 'https://youradexchange.com/video/select.php?r=12108782';
     const pressedKeys = new Set();
     let isEditMode = false;
     let pendingPanelTarget = null;
@@ -1310,218 +1303,116 @@ function updateFeaturedClasses(total) {
       }
     }
 
-    function openInfoModal(type, key) {
-      const item = catalog[type]?.[key];
-      if (!item) return;
-
-      document.getElementById('infoTitle').innerText = item.title;
-      document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
-      document.getElementById('infoBadge').innerText = type === 'movies' ? 'Película' : (type === 'series' ? 'Serie' : 'Destacado');
-      document.getElementById('infoHero').style.backgroundImage = item.poster ? `url('${item.poster}')` : 'none';
-
-      const playBtn = document.getElementById('infoPlayBtn');
-      const epContainer = document.getElementById('episodesListContainer');
-
-      if (type === 'series') {
-        playBtn.style.display = 'none';
-        epContainer.style.display = 'block';
-        const episodes = item.episodes ? Object.values(item.episodes) : [];
-        let epsHtml = '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3><div class="episodes-list">';
-
-        if (episodes.length === 0) {
-          epsHtml += '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
-        } else {
-          episodes.sort((a,b) => a.season - b.season || a.epNum - b.epNum).forEach(ep => {
-            epsHtml += `
-              <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
-                <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
-                <span>▶ Ver</span>
-              </div>`;
-          });
-        }
-        epContainer.innerHTML = epsHtml + '</div>';
-      } else {
-        playBtn.style.display = 'inline-flex';
-        epContainer.style.display = 'none';
-        playBtn.onclick = () => {
-          closeInfoModal();
-          if(item.src) playMedia(item.src);
-          else alert("Sin enlace de video.");
-        };
-      }
-
-      document.getElementById('infoModal').style.display = 'flex';
-    }
-
-    function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
+    
 function playMedia(url) {
     const modal = document.getElementById('playerModal');
-    const video = document.getElementById('localVideoPlayer');
-    const iframe = document.getElementById('iframeVideoPlayer');
-    const nav = document.getElementById('seriesControls');
+    const adContainer = document.getElementById('vastAdContainer');
+    const videoTag = document.getElementById('localVideoPlayer');
+    const iframeTag = document.getElementById('iframeVideoPlayer');
+    const popunderOverlay = document.getElementById('popunderOverlay');
 
-    if (!modal || !video || !iframe) {
-        console.error('No se encontraron los elementos del reproductor');
+    if (!modal || !adContainer || !videoTag || !iframeTag) {
+        console.error('Faltan elementos del reproductor.');
         return;
     }
 
     modal.style.display = 'flex';
-
-    // Ocultar navegación si no corresponde
-    if (nav) nav.style.display = 'none';
-
-    // Limpiar iframe
-    iframe.style.display = 'none';
-    iframe.src = '';
-
-    // Limpiar reproductor anterior
-    if (window.fpPlayer) {
-        try {
-            window.fpPlayer.destroy();
-        } catch (e) {
-            console.warn('No se pudo destruir Fluid Player:', e);
-        }
-        window.fpPlayer = null;
-    }
-
-    // ==========================================
-    // SI ES MP4 / WEBM
-    // ==========================================
-
-    const esVideoDirecto =
-        /\.mp4(?:\?|$)/i.test(url) ||
-        /\.webm(?:\?|$)/i.test(url);
-
-    if (esVideoDirecto) {
-
-        video.style.display = 'block';
-        video.src = url;
-        video.load();
-
-        window.fpPlayer = fluidPlayer('localVideoPlayer', {
-
-            layoutControls: {
-                fillToContainer: true,
-                autoPlay: true,
-                allowDownload: false
-            },
-
-            vastOptions: {
-                adList: [
-                    {
-                        roll: 'preRoll',
-                        vastTag:
-                            'https://youradexchange.com/video/select.php?r=12108782'
-                    }
-                ]
-            }
-
-        });
-
-        return;
-    }
-
-    // ==========================================
-    // SI ES IFRAME
-    // ==========================================
+    if (popunderOverlay) popunderOverlay.style.display = 'none';
 
     window.videoIframePendiente = url;
 
-    // Mostrar el video temporal
-    video.style.display = 'block';
+    if (window.vastAdPlayer) {
+        try { window.vastAdPlayer.stopAd(); } catch (e) {}
+        window.vastAdPlayer = null;
+    }
+    if (window.fpPlayer) {
+        try { window.fpPlayer.destroy(); } catch (e) {}
+        window.fpPlayer = null;
+    }
 
-    // IMPORTANTE:
-    // usamos un video real muy corto en lugar del data: falso
-    video.src =
-        'https://cdn.jsdelivr.net/gh/mediaelement/mediaelement@master/demo/media/echo-hereweare.mp4';
+    iframeTag.src = '';
+    iframeTag.style.display = 'none';
+    videoTag.pause();
+    videoTag.removeAttribute('src');
+    videoTag.load();
+    videoTag.style.display = 'none';
+    adContainer.innerHTML = '';
+    adContainer.style.display = 'block';
 
-    video.load();
-
-    // Crear Fluid Player
-    try {
-
-        window.fpPlayer = fluidPlayer('localVideoPlayer', {
-
-            layoutControls: {
-                fillToContainer: true,
-                autoPlay: true,
-                allowDownload: false
-            },
-
-            vastOptions: {
-
-                adList: [
-                    {
-                        roll: 'preRoll',
-                        vastTag:
-                            'https://youradexchange.com/video/select.php?r=12108782'
-                    }
-                ]
-
-            }
-
-        });
-
-    } catch (error) {
-
-        console.error('Error iniciando Fluid Player:', error);
-
-        mostrarIframeDespuesDelAnuncio();
-
+    if (typeof window.VASTPlayer === 'undefined') {
+        console.error('VASTPlayer no está cargado.');
+        cargarContenidoPrincipal();
         return;
     }
 
-    // ==========================================
-    // CUANDO TERMINA EL ANUNCIO
-    // ==========================================
-
-    function terminarAnuncio() {
-
-        if (!window.videoIframePendiente) return;
-
-        const destino = window.videoIframePendiente;
-
-        window.videoIframePendiente = null;
-
-        if (window.fpPlayer) {
-            try {
-                window.fpPlayer.destroy();
-            } catch (e) {}
-
-            window.fpPlayer = null;
-        }
-
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-        video.style.display = 'none';
-
-        iframe.src = destino;
-        iframe.style.display = 'block';
-
-        console.log('Anuncio terminado. Cargando contenido:', destino);
+    let contenidoCargado = false;
+    function finalizarVAST() {
+        if (contenidoCargado) return;
+        contenidoCargado = true;
+        cargarContenidoPrincipal();
     }
 
-    // Si termina el video
-    video.addEventListener(
-        'ended',
-        terminarAnuncio,
-        { once: true }
-    );
+    try {
+        window.vastAdPlayer = new window.VASTPlayer(adContainer);
+        window.vastAdPlayer.once('AdStopped', finalizarVAST);
+        window.vastAdPlayer.once('error', function(error) {
+            console.error('Error VAST:', error);
+            finalizarVAST();
+        });
 
-    // Seguridad: si el anuncio no arranca correctamente,
-    // no dejamos al usuario atrapado en pantalla negra.
-    setTimeout(() => {
-
-        if (
-            window.videoIframePendiente &&
-            video.paused
-        ) {
-            console.warn('El anuncio no inició correctamente.');
-        }
-
-    }, 5000);
+        console.log('Cargando VAST:', VAST_URL);
+        window.vastAdPlayer.load(VAST_URL)
+            .then(function() {
+                console.log('VAST cargado correctamente.');
+                return window.vastAdPlayer.startAd();
+            })
+            .then(function() {
+                console.log('Anuncio VAST iniciado.');
+            })
+            .catch(function(error) {
+                console.error('No se pudo iniciar el VAST:', error);
+                finalizarVAST();
+            });
+    } catch (error) {
+        console.error('Error creando VASTPlayer:', error);
+        finalizarVAST();
+    }
 }
+
+function cargarContenidoPrincipal() {
+    const destino = window.videoIframePendiente;
+    if (!destino) return;
+    window.videoIframePendiente = null;
+
+    const adContainer = document.getElementById('vastAdContainer');
+    const videoTag = document.getElementById('localVideoPlayer');
+    const iframeTag = document.getElementById('iframeVideoPlayer');
+
+    if (window.vastAdPlayer) {
+        try { window.vastAdPlayer.stopAd(); } catch (e) {}
+        window.vastAdPlayer = null;
+    }
+    if (adContainer) { adContainer.innerHTML = ''; adContainer.style.display = 'none'; }
+
+    if (/\.(mp4|webm)(\?|#|$)/i.test(destino)) {
+        iframeTag.src = '';
+        iframeTag.style.display = 'none';
+        videoTag.src = destino;
+        videoTag.setAttribute('controlsList', 'nodownload');
+        videoTag.style.display = 'block';
+        videoTag.load();
+        videoTag.play().catch(function() {});
+        return;
+    }
+
+    videoTag.pause();
+    videoTag.removeAttribute('src');
+    videoTag.load();
+    videoTag.style.display = 'none';
+    iframeTag.src = destino;
+    iframeTag.style.display = 'block';
+}
+
 function ejecutarPopunder() {
   // Aquí va tu código para abrir el enlace publicitario / popunder
   // Ejemplo: window.open('https://tu-enlace-de-publicidad.com', '_blank');
@@ -1533,67 +1424,7 @@ function ejecutarPopunder() {
   }
 }
 
-function closePlayer() {
-
-    const modal = document.getElementById('playerModal');
-    const videoTag = document.getElementById('localVideoPlayer');
-    const iframeTag = document.getElementById('iframeVideoPlayer');
-    const vastContainer = document.getElementById('vastAdContainer');
-    const navContainer = document.getElementById('seriesControls');
-
-    // Detener VAST
-    if (window.vastAdPlayer) {
-
-        try {
-            window.vastAdPlayer.stopAd();
-        } catch (e) {}
-
-        window.vastAdPlayer = null;
-    }
-
-    // Destruir Fluid Player
-    if (window.fpPlayer) {
-
-        try {
-            window.fpPlayer.destroy();
-        } catch (e) {}
-
-        window.fpPlayer = null;
-    }
-
-    if (videoTag) {
-
-        videoTag.pause();
-        videoTag.removeAttribute('src');
-        videoTag.load();
-        videoTag.style.display = 'none';
-    }
-
-    if (iframeTag) {
-
-        iframeTag.src = '';
-        iframeTag.style.display = 'none';
-    }
-
-    if (vastContainer) {
-
-        vastContainer.innerHTML = '';
-        vastContainer.style.display = 'none';
-    }
-
-    window.videoIframePendiente = null;
-
-    if (navContainer) {
-        navContainer.style.display = 'none';
-    }
-
-    if (modal) {
-        modal.style.display = 'none';
-    }
-
-    currentEpisodeIndex = -1;
-}
-    // FORMULARIOS DE ENVÍO A FIREBASE
+// FORMULARIOS DE ENVÍO A FIREBASE
     document.getElementById('featuredForm').addEventListener('submit', (e) => {
       e.preventDefault();
       saveToFirebase('featured', {
@@ -1778,50 +1609,23 @@ function closePlayer() {
   const modal = document.getElementById('playerModal');
   const videoTag = document.getElementById('localVideoPlayer');
   const iframeTag = document.getElementById('iframeVideoPlayer');
+  const adContainer = document.getElementById('vastAdContainer');
   const navContainer = document.getElementById('seriesControls');
+  const popunderOverlay = document.getElementById('popunderOverlay');
 
-  videoTag.pause();
-  videoTag.src = '';
-  iframeTag.src = '';
-  
-  modal.style.display = 'none';
-  navContainer.style.display = 'none'; // Ocultar botones de navegación al cerrar
+  if (window.vastAdPlayer) { try { window.vastAdPlayer.stopAd(); } catch (e) {} window.vastAdPlayer = null; }
+  if (window.fpPlayer) { try { window.fpPlayer.destroy(); } catch (e) {} window.fpPlayer = null; }
+  if (videoTag) { videoTag.pause(); videoTag.removeAttribute('src'); videoTag.load(); videoTag.style.display = 'none'; }
+  if (iframeTag) { iframeTag.src = ''; iframeTag.style.display = 'none'; }
+  if (adContainer) { adContainer.innerHTML = ''; adContainer.style.display = 'none'; }
+  if (popunderOverlay) popunderOverlay.style.display = 'none';
+  window.videoIframePendiente = null;
+  if (modal) modal.style.display = 'none';
+  if (navContainer) navContainer.style.display = 'none';
   currentEpisodeIndex = -1;
 }
-   let fpPlayer = null;
 
-function reproducirPelicula(urlVideoMP4) {
-    const videoElement = document.getElementById('localVideoPlayer');
-    const videoSource = document.getElementById('videoSource');
-
-    // 1. Asignar la URL del video MP4 al reproductor
-    videoSource.src = urlVideoMP4;
-    videoElement.style.display = 'block';
-    videoElement.load();
-
-    // 2. Destruir la instancia previa del reproductor si ya existía
-    if (fpPlayer) {
-        fpPlayer.destroy();
-    }
-
-    // 3. Inicializar Fluid Player cargando el anuncio VAST antes del video
-    fpPlayer = fluidPlayer('localVideoPlayer', {
-        layoutControls: {
-            fillToContainer: true,
-            autoPlay: true
-        },
-        vastOptions: {
-            adList: [
-                {
-                    roll: 'preRoll', // Se ejecuta antes de iniciar el video
-                    vastTag: 'https://youradexchange.com/video/select.php?r=12108782' // Tu enlace VAST
-                }
-            ]
-        }
-    });
-}   
 </script>
-  </script>
   <script>
   let adPlayed = false;
   const smartlinkUrl = 'https://www.effectivecpmnetwork.com/renpmz5t05?key=95727fb1e3c21432fc7b4b6a5aed153e';
@@ -1830,8 +1634,7 @@ function reproducirPelicula(urlVideoMP4) {
 <!-- Tus reproductores y scripts de la web -->
 
 <!-- Código de In-Page Push de Adsterra -->
-<script type='text/javascript' src='<script src="https://pl30793352.effectivecpmnetwork.com/ff/8e/5f/ff8e5fc1885dd3156fb168f07deddd7b.js">
-'></script>
+<script type="text/javascript" src="https://pl30793352.effectivecpmnetwork.com/ff/8e/5f/ff8e5fc1885dd3156fb168f07deddd7b.js"></script>
 <script src="/sw.js"></script>
 <script>(function(s){s.dataset.zone='11558745',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 <script>(function(s){s.dataset.zone='11558994',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
