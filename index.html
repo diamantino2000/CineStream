@@ -1346,38 +1346,178 @@ function updateFeaturedClasses(total) {
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 function playMedia(url) {
-  const modal = document.getElementById('playerModal');
-  const videoTag = document.getElementById('localVideoPlayer');
-  const iframeTag = document.getElementById('iframeVideoPlayer');
-  const popunderOverlay = document.getElementById('popunderOverlay');
+    const modal = document.getElementById('playerModal');
+    const videoTag = document.getElementById('localVideoPlayer');
+    const iframeTag = document.getElementById('iframeVideoPlayer');
+    const popunderOverlay = document.getElementById('popunderOverlay');
 
-  if (url.includes('.mp4') || url.includes('.webm')) {
+    // Mostrar reproductor
+    modal.style.display = 'flex';
+
+    // Ocultar overlay de popunder
+    if (popunderOverlay) {
+        popunderOverlay.style.display = 'none';
+    }
+
+    // =====================================================
+    // 1. SI ES MP4 / WEBM → REPRODUCIR CON VAST
+    // =====================================================
+    if (url.includes('.mp4') || url.includes('.webm')) {
+
+        iframeTag.style.display = 'none';
+        iframeTag.src = '';
+
+        videoTag.style.display = 'block';
+        videoTag.src = url;
+        videoTag.setAttribute('controlsList', 'nodownload');
+
+        // Destruir Fluid Player anterior
+        if (window.fpPlayer) {
+            try {
+                window.fpPlayer.destroy();
+            } catch (e) {}
+            window.fpPlayer = null;
+        }
+
+        // Crear Fluid Player con anuncio VAST
+        window.fpPlayer = fluidPlayer('localVideoPlayer', {
+            layoutControls: {
+                fillToContainer: true,
+                autoPlay: true,
+                allowDownload: false
+            },
+
+            vastOptions: {
+                adList: [
+                    {
+                        roll: 'preRoll',
+                        vastTag: 'https://youradexchange.com/video/select.php?r=12108782'
+                    }
+                ]
+            }
+        });
+
+        return;
+    }
+
+
+    // =====================================================
+    // 2. SI ES IFRAME → MOSTRAR ANUNCIO VAST ANTES
+    // =====================================================
+
+    // Guardamos el iframe que queremos reproducir
+    window.videoIframePendiente = url;
+
+    // Ocultar iframe mientras aparece el anuncio
     iframeTag.style.display = 'none';
     iframeTag.src = '';
-    
-    videoTag.src = url;
-    videoTag.setAttribute('controlsList', 'nodownload');
+
+    // Ocultar vídeo normal
+    videoTag.pause();
     videoTag.style.display = 'block';
 
-    // No mostramos el overlay para archivos mp4 directos
-    popunderOverlay.style.display = 'none';
+    // Limpiar vídeo
+    videoTag.removeAttribute('src');
+    videoTag.load();
 
-    modal.style.display = 'flex';
-    videoTag.play();
+    // Destruir Fluid Player anterior
+    if (window.fpPlayer) {
+        try {
+            window.fpPlayer.destroy();
+        } catch (e) {}
+        window.fpPlayer = null;
+    }
 
-  } else {
-    // Si es un iframe externo (por ejemplo, servidor de video)
-    videoTag.style.display = 'none';
-    videoTag.src = '';
-    
-    iframeTag.src = url;
-    iframeTag.style.display = 'block';
-    
-    // MOSTRAR la capa transparente del popunder SOLO AHORA que se abrió el iframe
-    popunderOverlay.style.display = 'flex';
+    // Crear una fuente temporal para que Fluid Player
+    // tenga un reproductor donde mostrar el anuncio
+    videoTag.src =
+        'data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc28ybXA0MQ==';
 
-    modal.style.display = 'flex';
-  }
+    videoTag.load();
+
+    // Crear Fluid Player con el VAST
+    window.fpPlayer = fluidPlayer('localVideoPlayer', {
+
+        layoutControls: {
+            fillToContainer: true,
+            autoPlay: true,
+            allowDownload: false,
+            playButtonShowing: false
+        },
+
+        vastOptions: {
+            adList: [
+                {
+                    roll: 'preRoll',
+                    vastTag: 'https://youradexchange.com/video/select.php?r=12108782'
+                }
+            ]
+        }
+
+    });
+
+    // =====================================================
+    // CUANDO TERMINE EL ANUNCIO → MOSTRAR EL IFRAME
+    // =====================================================
+
+    let iframeMostrado = false;
+
+    function mostrarIframeDespuesDelAnuncio() {
+
+        if (iframeMostrado) return;
+        iframeMostrado = true;
+
+        const iframe = document.getElementById('iframeVideoPlayer');
+        const video = document.getElementById('localVideoPlayer');
+
+        if (!iframe || !window.videoIframePendiente) return;
+
+        // Destruir Fluid Player
+        if (window.fpPlayer) {
+            try {
+                window.fpPlayer.destroy();
+            } catch (e) {}
+            window.fpPlayer = null;
+        }
+
+        // Ocultar reproductor del anuncio
+        video.pause();
+        video.removeAttribute('src');
+        video.style.display = 'none';
+
+        // Cargar la película/serie
+        iframe.src = window.videoIframePendiente;
+        iframe.style.display = 'block';
+
+        // Limpiar
+        window.videoIframePendiente = null;
+    }
+
+    // Detectar final del anuncio/reproductor
+    videoTag.addEventListener(
+        'ended',
+        mostrarIframeDespuesDelAnuncio,
+        { once: true }
+    );
+
+    // Si Fluid Player termina el anuncio y dispara el evento
+    setTimeout(() => {
+        const eventos = [
+            'adEnded',
+            'adEnd',
+            'adFinished'
+        ];
+
+        eventos.forEach(evento => {
+            try {
+                videoTag.addEventListener(
+                    evento,
+                    mostrarIframeDespuesDelAnuncio,
+                    { once: true }
+                );
+            } catch (e) {}
+        });
+    }, 500);
 }
 
 function ejecutarPopunder() {
