@@ -1103,9 +1103,24 @@ header {
         renderFeatured();
         renderMedia('movies');
         renderMedia('series');
+          
+        abrirContenidoDesdeURL();
       });
     }
+function abrirContenidoDesdeURL() {
+  const params = new URLSearchParams(window.location.search);
 
+  const pelicula = params.get('pelicula');
+  const serie = params.get('serie');
+
+  if (pelicula && catalog.movies?.[pelicula]) {
+    openInfoModal('movies', pelicula);
+  }
+
+  if (serie && catalog.series?.[serie]) {
+    openInfoModal('series', serie);
+  }
+}
   // TECLAS Y ATAJOS
     window.addEventListener('keydown', (e) => {
       pressedKeys.add(e.key.toLowerCase());
@@ -1300,6 +1315,16 @@ function updateFeaturedClasses(total) {
     function openInfoModal(type, key) {
       const item = catalog[type]?.[key];
       if (!item) return;
+          // Crear enlace individual del contenido
+  const url = new URL(window.location.href);
+
+  if (type === 'movies') {
+    url.searchParams.set('pelicula', key);
+  } else if (type === 'series') {
+    url.searchParams.set('serie', key);
+  }
+
+  window.history.pushState({}, '', url);
 
       document.getElementById('infoTitle').innerText = item.title;
       document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
