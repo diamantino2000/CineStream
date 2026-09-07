@@ -13,6 +13,7 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
     <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vast-player@0.2/dist/vast-player.min.js"></script>
     <script type="text/javascript">
    aclib.runAutoTag({
        zoneId: '21otw8xwvx',
@@ -1051,7 +1052,10 @@ header {
 <div class="player-overlay" id="playerModal">
   <div class="player-container">
     <button class="close-btn player-close-btn" onclick="closePlayer()">&times;</button>
-    
+
+      <div id="vastAdContainer"
+     style="display:none; width:100%; height:520px; background:#000;">
+</div>
     <video id="localVideoPlayer" controls autoplay style="display: none;">
     <source src="" type="video/mp4" />
 </video>
@@ -1346,41 +1350,60 @@ function updateFeaturedClasses(total) {
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 function playMedia(url) {
+
     const modal = document.getElementById('playerModal');
     const videoTag = document.getElementById('localVideoPlayer');
     const iframeTag = document.getElementById('iframeVideoPlayer');
+    const vastContainer = document.getElementById('vastAdContainer');
     const popunderOverlay = document.getElementById('popunderOverlay');
 
-    // Mostrar reproductor
+    if (!modal || !videoTag || !iframeTag) return;
+
     modal.style.display = 'flex';
 
-    // Ocultar overlay de popunder
     if (popunderOverlay) {
         popunderOverlay.style.display = 'none';
     }
 
+    // Limpiar reproductores anteriores
+    iframeTag.src = '';
+    iframeTag.style.display = 'none';
+
+    videoTag.pause();
+    videoTag.removeAttribute('src');
+    videoTag.load();
+    videoTag.style.display = 'none';
+
+    if (window.fpPlayer) {
+        try {
+            window.fpPlayer.destroy();
+        } catch (e) {}
+
+        window.fpPlayer = null;
+    }
+
     // =====================================================
-    // 1. SI ES MP4 / WEBM → REPRODUCIR CON VAST
+    // MP4 / WEBM
     // =====================================================
-    if (url.includes('.mp4') || url.includes('.webm')) {
 
-        iframeTag.style.display = 'none';
-        iframeTag.src = '';
+    const esVideoDirecto =
+        /\.mp4(?:\?|$)/i.test(url) ||
+        /\.webm(?:\?|$)/i.test(url);
 
-        videoTag.style.display = 'block';
-        videoTag.src = url;
-        videoTag.setAttribute('controlsList', 'nodownload');
+    if (esVideoDirecto) {
 
-        // Destruir Fluid Player anterior
-        if (window.fpPlayer) {
-            try {
-                window.fpPlayer.destroy();
-            } catch (e) {}
-            window.fpPlayer = null;
+        if (vastContainer) {
+            vastContainer.style.display = 'none';
+            vastContainer.innerHTML = '';
         }
 
-        // Crear Fluid Player con anuncio VAST
+        videoTag.src = url;
+        videoTag.style.display = 'block';
+        videoTag.setAttribute('controlsList', 'nodownload');
+        videoTag.load();
+
         window.fpPlayer = fluidPlayer('localVideoPlayer', {
+
             layoutControls: {
                 fillToContainer: true,
                 autoPlay: true,
@@ -1391,135 +1414,158 @@ function playMedia(url) {
                 adList: [
                     {
                         roll: 'preRoll',
-                        vastTag: 'https://youradexchange.com/video/select.php?r=12108782'
+                        vastTag:
+                            'https://youradexchange.com/video/select.php?r=12108782'
                     }
                 ]
             }
+
         });
 
         return;
     }
 
-
     // =====================================================
-    // 2. SI ES IFRAME → MOSTRAR ANUNCIO VAST ANTES
+    // IFRAME / SERIE
     // =====================================================
 
-    // Guardamos el iframe que queremos reproducir
     window.videoIframePendiente = url;
 
-    // Ocultar iframe mientras aparece el anuncio
-    iframeTag.style.display = 'none';
-    iframeTag.src = '';
-
-    // Ocultar vídeo normal
-    videoTag.pause();
-    videoTag.style.display = 'block';
-
-    // Limpiar vídeo
-    videoTag.removeAttribute('src');
-    videoTag.load();
-
-    // Destruir Fluid Player anterior
-    if (window.fpPlayer) {
-        try {
-            window.fpPlayer.destroy();
-        } catch (e) {}
-        window.fpPlayer = null;
+    if (!vastContainer) {
+        console.error('No existe #vastAdContainer');
+        
+        iframeTag.src = url;
+        iframeTag.style.display = 'block';
+        return;
     }
 
-    // Crear una fuente temporal para que Fluid Player
-    // tenga un reproductor donde mostrar el anuncio
-    videoTag.src =
-        'data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc28ybXA0MQ==';
+    // Mostrar reproductor VAST
+    vastContainer.style.display = 'block';
+    vastContainer.innerHTML = '';
 
-    videoTag.load();
+    try {
 
-    // Crear Fluid Player con el VAST
-    window.fpPlayer = fluidPlayer('localVideoPlayer', {
+        // Crear reproductor VAST
+        window.vastAdPlayer =
+            new VASTPlayer(vastContainer);
 
-        layoutControls: {
-            fillToContainer: true,
-            autoPlay: true,
-            allowDownload: false,
-            playButtonShowing: false
-        },
+        // Cuando termina el anuncio
+        window.vastAdPlayer.once(
+            'AdStopped',
+            function () {
 
-        vastOptions: {
-            adList: [
-                {
-                    roll: 'preRoll',
-                    vastTag: 'https://youradexchange.com/video/select.php?r=12108782'
-                }
-            ]
-        }
+                mostrarIframeDespuesDelAnuncio();
 
-    });
+            }
+        );
 
-    // =====================================================
-    // CUANDO TERMINE EL ANUNCIO → MOSTRAR EL IFRAME
-    // =====================================================
+        // Si hay error con el anuncio,
+        // no dejamos la pantalla negra
+        window.vastAdPlayer.once(
+            'error',
+            function (error) {
 
-    let iframeMostrado = false;
-
-    function mostrarIframeDespuesDelAnuncio() {
-
-        if (iframeMostrado) return;
-        iframeMostrado = true;
-
-        const iframe = document.getElementById('iframeVideoPlayer');
-        const video = document.getElementById('localVideoPlayer');
-
-        if (!iframe || !window.videoIframePendiente) return;
-
-        // Destruir Fluid Player
-        if (window.fpPlayer) {
-            try {
-                window.fpPlayer.destroy();
-            } catch (e) {}
-            window.fpPlayer = null;
-        }
-
-        // Ocultar reproductor del anuncio
-        video.pause();
-        video.removeAttribute('src');
-        video.style.display = 'none';
-
-        // Cargar la película/serie
-        iframe.src = window.videoIframePendiente;
-        iframe.style.display = 'block';
-
-        // Limpiar
-        window.videoIframePendiente = null;
-    }
-
-    // Detectar final del anuncio/reproductor
-    videoTag.addEventListener(
-        'ended',
-        mostrarIframeDespuesDelAnuncio,
-        { once: true }
-    );
-
-    // Si Fluid Player termina el anuncio y dispara el evento
-    setTimeout(() => {
-        const eventos = [
-            'adEnded',
-            'adEnd',
-            'adFinished'
-        ];
-
-        eventos.forEach(evento => {
-            try {
-                videoTag.addEventListener(
-                    evento,
-                    mostrarIframeDespuesDelAnuncio,
-                    { once: true }
+                console.warn(
+                    'Error VAST:',
+                    error
                 );
-            } catch (e) {}
-        });
-    }, 500);
+
+                mostrarIframeDespuesDelAnuncio();
+
+            }
+        );
+
+        // Cargar anuncio
+        window.vastAdPlayer
+            .load(
+                'https://youradexchange.com/video/select.php?r=12108782'
+            )
+            .then(function () {
+
+                return window.vastAdPlayer.startAd();
+
+            })
+            .catch(function (error) {
+
+                console.warn(
+                    'No se pudo cargar el VAST:',
+                    error
+                );
+
+                // Si el anuncio falla,
+                // reproducir directamente el episodio
+                mostrarIframeDespuesDelAnuncio();
+
+            });
+
+    } catch (error) {
+
+        console.error(
+            'Error creando VASTPlayer:',
+            error
+        );
+
+        mostrarIframeDespuesDelAnuncio();
+    }
 }
 
+
+// =====================================================
+// MOSTRAR EL IFRAME DESPUÉS DEL ANUNCIO
+// =====================================================
+
+function mostrarIframeDespuesDelAnuncio() {
+
+    const iframe = document.getElementById('iframeVideoPlayer');
+    const video = document.getElementById('localVideoPlayer');
+    const vastContainer = document.getElementById('vastAdContainer');
+
+    if (!iframe || !window.videoIframePendiente) {
+        return;
+    }
+
+    // Evitar doble ejecución
+    const url = window.videoIframePendiente;
+    window.videoIframePendiente = null;
+
+    // Detener anuncio
+    if (window.vastAdPlayer) {
+
+        try {
+            window.vastAdPlayer.stopAd();
+        } catch (e) {}
+
+        window.vastAdPlayer = null;
+    }
+
+    // Ocultar anuncio
+    if (vastContainer) {
+
+        vastContainer.innerHTML = '';
+        vastContainer.style.display = 'none';
+    }
+
+    // Ocultar vídeo MP4
+    if (video) {
+
+        try {
+            video.pause();
+        } catch (e) {}
+
+        video.removeAttribute('src');
+        video.load();
+        video.style.display = 'none';
+    }
+
+    // Mostrar episodio
+    iframe.src = url;
+    iframe.style.display = 'block';
+
+    console.log(
+        'Episodio cargado después del anuncio:',
+        url
+    );
+}
 function ejecutarPopunder() {
   // Aquí va tu código para abrir el enlace publicitario / popunder
   // Ejemplo: window.open('https://tu-enlace-de-publicidad.com', '_blank');
@@ -1532,19 +1578,64 @@ function ejecutarPopunder() {
 }
 
 function closePlayer() {
-  const videoTag = document.getElementById('localVideoPlayer');
-  const iframeTag = document.getElementById('iframeVideoPlayer');
-  const popunderOverlay = document.getElementById('popunderOverlay');
 
-  if (videoTag) { videoTag.pause(); videoTag.src = ''; }
-  if (iframeTag) { iframeTag.src = ''; }
-  
-  // Ocultar la capa de popunder al cerrar el reproductor
-  if (popunderOverlay) {
-    popunderOverlay.style.display = 'none';
-  }
+    const modal = document.getElementById('playerModal');
+    const videoTag = document.getElementById('localVideoPlayer');
+    const iframeTag = document.getElementById('iframeVideoPlayer');
+    const vastContainer = document.getElementById('vastAdContainer');
+    const navContainer = document.getElementById('seriesControls');
 
-  document.getElementById('playerModal').style.display = 'none';
+    // Detener VAST
+    if (window.vastAdPlayer) {
+
+        try {
+            window.vastAdPlayer.stopAd();
+        } catch (e) {}
+
+        window.vastAdPlayer = null;
+    }
+
+    // Destruir Fluid Player
+    if (window.fpPlayer) {
+
+        try {
+            window.fpPlayer.destroy();
+        } catch (e) {}
+
+        window.fpPlayer = null;
+    }
+
+    if (videoTag) {
+
+        videoTag.pause();
+        videoTag.removeAttribute('src');
+        videoTag.load();
+        videoTag.style.display = 'none';
+    }
+
+    if (iframeTag) {
+
+        iframeTag.src = '';
+        iframeTag.style.display = 'none';
+    }
+
+    if (vastContainer) {
+
+        vastContainer.innerHTML = '';
+        vastContainer.style.display = 'none';
+    }
+
+    window.videoIframePendiente = null;
+
+    if (navContainer) {
+        navContainer.style.display = 'none';
+    }
+
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    currentEpisodeIndex = -1;
 }
     // FORMULARIOS DE ENVÍO A FIREBASE
     document.getElementById('featuredForm').addEventListener('submit', (e) => {
