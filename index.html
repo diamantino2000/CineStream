@@ -1295,93 +1295,6 @@ function updateFeaturedClasses(total) {
         });
       }
     }
-function openInfoModal(type, key) {
-  const item = catalog[type]?.[key];
-  if (!item) return;
-      // Crear URL individual y recargar
-  if (type === 'movies') {
-    window.location.href = window.location.pathname + '?pelicula=' + encodeURIComponent(key);
-    return;
-  }
-
-  if (type === 'series') {
-    window.location.href = window.location.pathname + '?serie=' + encodeURIComponent(key);
-    return;
-  }
-
-  // Cambiar URL y recargar la página
-  if (type === 'movies') {
-    window.location.href = window.location.pathname + '?pelicula=' + encodeURIComponent(key);
-    return;
-  }
-
-  if (type === 'series') {
-    window.location.href = window.location.pathname + '?serie=' + encodeURIComponent(key);
-    return;
-  }
-
-  document.getElementById('infoTitle').innerText = item.title;
-  document.getElementById('infoDesc').innerText =
-    item.desc && item.desc.trim() !== ''
-      ? item.desc
-      : "Sin descripción disponible.";
-
-  document.getElementById('infoBadge').innerText =
-    type === 'movies' ? 'Película' :
-    type === 'series' ? 'Serie' : 'Destacado';
-
-  document.getElementById('infoHero').style.backgroundImage =
-    item.poster ? `url('${item.poster}')` : 'none';
-
-  const playBtn = document.getElementById('infoPlayBtn');
-  const epContainer = document.getElementById('episodesListContainer');
-
-  if (type === 'series') {
-    playBtn.style.display = 'none';
-    epContainer.style.display = 'block';
-
-    const episodes = item.episodes
-      ? Object.values(item.episodes)
-      : [];
-
-    let epsHtml =
-      '<h3 style="margin-bottom:12px; font-size:16px;">Episodios</h3>' +
-      '<div class="episodes-list">';
-
-    if (episodes.length === 0) {
-      epsHtml +=
-        '<p style="color:#757575; font-size:14px;">No hay episodios agregados aún.</p>';
-    } else {
-      episodes
-        .sort((a, b) => a.season - b.season || a.epNum - b.epNum)
-        .forEach(ep => {
-          epsHtml += `
-            <div class="ep-item" onclick="closeInfoModal(); playMedia('${ep.src}')">
-              <div>T${ep.season} - E${ep.epNum} : ${ep.title || 'Episodio ' + ep.epNum}</div>
-              <span>▶ Ver</span>
-            </div>`;
-        });
-    }
-
-    epContainer.innerHTML = epsHtml + '</div>';
-
-  } else {
-    playBtn.style.display = 'inline-flex';
-    epContainer.style.display = 'none';
-
-    playBtn.onclick = () => {
-      closeInfoModal();
-
-      if (item.src) {
-        playMedia(item.src);
-      } else {
-        alert("Sin enlace de video.");
-      }
-    };
-  }
-
-  document.getElementById('infoModal').style.display = 'flex';
-}
 
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 function playMedia(url) {
@@ -1548,6 +1461,22 @@ let currentEpisodeIndex = -1;
 function openInfoModal(type, key) {
   const item = catalog[type]?.[key];
   if (!item) return;
+
+  // CAMBIAR URL Y RECARGAR LA PÁGINA
+  if (type === 'movies') {
+    window.location.href = window.location.pathname + '?pelicula=' + encodeURIComponent(key);
+    return;
+  }
+
+  if (type === 'series') {
+    window.location.href = window.location.pathname + '?serie=' + encodeURIComponent(key);
+    return;
+  }
+
+  if (type === 'featured') {
+    window.location.href = window.location.pathname + '?destacado=' + encodeURIComponent(key);
+    return;
+  }
 
   document.getElementById('infoTitle').innerText = item.title;
   document.getElementById('infoDesc').innerText = item.desc && item.desc.trim() !== '' ? item.desc : "Sin descripción disponible.";
